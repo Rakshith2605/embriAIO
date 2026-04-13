@@ -1,0 +1,22 @@
+<svg viewBox="194 34 80 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect x="194" y="34" width="80" height="80" rx="18" fill="#0f0e1a"/>
+
+  <!-- Outer triangle edges (faint) -->
+  <line x1="234" y1="52" x2="261" y2="96" stroke="#534ab7" stroke-width="0.8" opacity="0.22"/>
+  <line x1="261" y1="96" x2="207" y2="96" stroke="#534ab7" stroke-width="0.8" opacity="0.22"/>
+  <line x1="207" y1="96" x2="234" y2="52" stroke="#534ab7" stroke-width="0.8" opacity="0.22"/>
+
+  <!-- Spokes: center to each vertex -->
+  <line x1="234" y1="78" x2="234" y2="52" stroke="#534ab7" stroke-width="1" opacity="0.48"/>
+  <line x1="234" y1="78" x2="261" y2="96" stroke="#534ab7" stroke-width="1" opacity="0.48"/>
+  <line x1="234" y1="78" x2="207" y2="96" stroke="#534ab7" stroke-width="1" opacity="0.48"/>
+
+  <!-- Center node (purple) -->
+  <circle cx="234" cy="78" r="6.5" fill="#3c3489" stroke="#afa9ec" stroke-width="1"/>
+
+  <!-- Satellite nodes (teal) -->
+  <circle cx="234" cy="52" r="4.5" fill="#085041" stroke="#5dcaa5" stroke-width="1"/>
+  <circle cx="261" cy="96" r="4.5" fill="#085041" stroke="#5dcaa5" stroke-width="1"/>
+  <circle cx="207" cy="96" r="4.5" fill="#085041" stroke="#5dcaa5" stroke-width="1"/>
+</svg>
