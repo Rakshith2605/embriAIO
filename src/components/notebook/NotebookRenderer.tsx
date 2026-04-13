@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { marked } from "marked";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, AlertTriangle, Play, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { ExternalLink, AlertTriangle, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getGithubUrl } from "@/lib/utils";
 
@@ -268,10 +268,8 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
   const [notebook, setNotebook] = useState<RawNotebook | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [errorMsg, setErrorMsg] = useState("");
-  const [showBinder, setShowBinder] = useState(false);
-  const [binderKey, setBinderKey] = useState(0);
 
-  const binderUrl = `https://mybinder.org/v2/gh/rasbt/LLMs-from-scratch/main?filepath=${encodeURIComponent(githubPath)}`;
+  const colabUrl = `https://colab.research.google.com/github/rasbt/LLMs-from-scratch/blob/main/${githubPath}`;
   const githubUrl = getGithubUrl(githubPath);
 
   const load = useCallback(() => {
@@ -295,55 +293,6 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
   useEffect(() => {
     load();
   }, [load]);
-
-  // ── Binder mode ──
-  if (showBinder) {
-    return (
-      <div className="flex flex-col rounded-xl border border-border overflow-hidden bg-background" style={{ height }}>
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <div className="h-3 w-3 rounded-full bg-red-500/70" />
-              <div className="h-3 w-3 rounded-full bg-yellow-500/70" />
-              <div className="h-3 w-3 rounded-full bg-green-500/70" />
-            </div>
-            <span className="text-xs text-muted-foreground font-mono truncate max-w-xs">{filename}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full border font-medium bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20">
-              Binder
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => { setBinderKey((k) => k + 1); }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              title="Reload Binder"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setShowBinder(false)}
-              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
-            >
-              ← Read mode
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 border-b border-orange-500/20">
-          <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />
-          <p className="text-xs text-orange-700 dark:text-orange-400">
-            Binder may take 1–2 minutes to start. Your changes are temporary.
-          </p>
-        </div>
-        <iframe
-          key={binderKey}
-          src={binderUrl}
-          title={title}
-          className="flex-1 border-0"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
-        />
-      </div>
-    );
-  }
 
   // ── Loading skeleton ──
   if (status === "loading") {
@@ -382,12 +331,12 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </button>
           <a
-            href={githubUrl}
+            href={colabUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-[#F9AB00] text-black hover:bg-[#F9AB00]/90 transition-colors"
           >
-            <ExternalLink className="h-3.5 w-3.5" /> View on GitHub
+            <ExternalLink className="h-3.5 w-3.5" /> Open in Colab
           </a>
         </div>
       </div>
@@ -411,13 +360,19 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowBinder(true)}
-            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+          <a
+            href={colabUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium bg-[#F9AB00] text-black hover:bg-[#F9AB00]/90 transition-colors"
+            title="Open in Google Colab"
           >
-            <Play className="h-3 w-3" />
-            Run on Binder
-          </button>
+            {/* Colab logo mark */}
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.25 17.292l-4.5-4.364 1.857-1.857 2.643 2.506 5.643-5.643 1.857 1.857-7.5 7.501z"/>
+            </svg>
+            Open in Colab
+          </a>
           <a
             href={githubUrl}
             target="_blank"
@@ -472,12 +427,9 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
       <div className="px-3 py-2 border-t border-border bg-muted/30 flex items-center justify-between shrink-0">
         <p className="text-[11px] text-muted-foreground">
           Pre-computed outputs · To run cells,{" "}
-          <button
-            onClick={() => setShowBinder(true)}
-            className="underline hover:text-foreground transition-colors"
-          >
-            open on Binder
-          </button>{" "}
+          <a href={colabUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+            open in Colab
+          </a>{" "}
           or{" "}
           <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
             clone from GitHub

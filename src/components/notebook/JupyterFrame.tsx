@@ -2,7 +2,7 @@
 
 /**
  * JupyterFrame — wraps NotebookRenderer which fetches and renders .ipynb JSON
- * directly in React (no iframe, no WASM). Falls back to Binder for execution.
+ * directly in React (no iframe, no WASM). "Open in Colab" for live execution.
  *
  * githubPath format: "ch02/01_main-chapter-code/ch02.ipynb"
  */
