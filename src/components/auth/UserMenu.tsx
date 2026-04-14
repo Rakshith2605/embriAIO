@@ -134,7 +134,7 @@ export function UserMenu() {
 
           {/* Sign out */}
           <button
-            onClick={() => { setOpen(false); signOut(); }}
+            onClick={() => { setOpen(false); signOut({ callbackUrl: "/" }); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 font-jetbrains text-[10px] uppercase tracking-[0.08em] text-left transition-colors"
             style={{ color: "#5C4E35" }}
             onMouseEnter={(e) => {

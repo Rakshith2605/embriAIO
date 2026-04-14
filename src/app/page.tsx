@@ -8,8 +8,14 @@ export const metadata = {
     "Learn AI from First Principles. Hands-on courses with real notebooks, video walkthroughs, and progress tracking.",
 };
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: { callbackUrl?: string };
+}) {
   const session = await auth();
-  if (session) redirect("/chapter/ch01");
-  return <SignInPage />;
+  if (session) {
+    redirect(searchParams.callbackUrl ?? "/chapter/ch01");
+  }
+  return <SignInPage callbackUrl={searchParams.callbackUrl} />;
 }
