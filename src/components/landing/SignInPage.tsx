@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function SignInPage({ callbackUrl }: Props) {
-  const destination = callbackUrl ?? "/chapter/ch01";
+  const destination = callbackUrl ?? "/home";
   const isContinuing = !!callbackUrl;
 
   return (

@@ -15,7 +15,7 @@ export default async function HomePage({
 }) {
   const session = await auth();
   if (session) {
-    redirect(searchParams.callbackUrl ?? "/chapter/ch01");
+    redirect(searchParams.callbackUrl ?? "/home");
   }
   return <SignInPage callbackUrl={searchParams.callbackUrl} />;
 }
