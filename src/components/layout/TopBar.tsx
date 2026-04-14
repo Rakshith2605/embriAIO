@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Search, Sun, Moon, ChevronRight, Menu, X } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Search, Menu, X } from "lucide-react";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { SearchDialog } from "@/components/search/SearchDialog";
 import { ALL_CHAPTERS } from "@/lib/curriculum";
-import { cn } from "@/lib/utils";
 
 interface Props {
   onMobileMenuToggle: () => void;
@@ -40,36 +38,44 @@ function buildBreadcrumb(pathname: string) {
 
 export function TopBar({ onMobileMenuToggle, mobileMenuOpen }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
   const pathname = usePathname();
 
-  useEffect(() => setMounted(true), []);
   const crumbs = buildBreadcrumb(pathname);
 
   useKeyboardShortcut("k", () => setSearchOpen(true));
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-border bg-background/95 backdrop-blur px-4">
+      <header
+        className="sticky top-0 z-40 flex h-14 items-center gap-3 px-4"
+        style={{ background: '#F7F2E7', borderBottom: '1px solid #C8B882' }}
+      >
         <button
           onClick={onMobileMenuToggle}
-          className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
+          className="lg:hidden transition-colors"
+          style={{ color: '#8B7355' }}
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        <nav className="flex-1 flex items-center gap-1 text-sm overflow-hidden" aria-label="Breadcrumb">
+        <nav className="flex-1 flex items-center gap-1 overflow-hidden" aria-label="Breadcrumb">
           {crumbs.map((crumb, i) => (
             <span key={crumb.href} className="flex items-center gap-1 min-w-0">
-              {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+              {i > 0 && (
+                <span className="font-jetbrains text-[10px] shrink-0" style={{ color: '#C8B882' }}>›</span>
+              )}
               {i === crumbs.length - 1 ? (
-                <span className="text-foreground font-medium truncate">{crumb.label}</span>
+                <span className="font-jetbrains text-[10px] font-medium truncate" style={{ color: '#1C1610' }}>
+                  {crumb.label}
+                </span>
               ) : (
                 <Link
                   href={crumb.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  className="font-jetbrains text-[10px] shrink-0 transition-colors"
+                  style={{ color: '#8B7355' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#1C1610'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
                 >
                   {crumb.label}
                 </Link>
@@ -78,39 +84,38 @@ export function TopBar({ onMobileMenuToggle, mobileMenuOpen }: Props) {
           ))}
         </nav>
 
+        {/* Search button — desktop */}
         <button
           onClick={() => setSearchOpen(true)}
-          className={cn(
-            "flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground",
-            "hover:border-ring hover:text-foreground transition-colors",
-            "hidden sm:flex"
-          )}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 font-jetbrains text-[10px] transition-colors"
+          style={{ border: '1px solid #C8B882', color: '#8B7355' }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.borderColor = '#C0392B';
+            (e.currentTarget as HTMLElement).style.color = '#C0392B';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.borderColor = '#C8B882';
+            (e.currentTarget as HTMLElement).style.color = '#8B7355';
+          }}
         >
-          <Search className="h-3.5 w-3.5" />
+          <Search className="h-3.5 w-3.5" style={{ color: '#A08E6B' }} />
           <span>Search</span>
-          <kbd className="pointer-events-none ml-2 hidden h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] sm:flex">
+          <kbd
+            className="pointer-events-none ml-2 hidden h-5 select-none items-center gap-1 px-1.5 font-jetbrains text-[10px] sm:flex"
+            style={{ border: '1px solid #C8B882', color: '#A08E6B' }}
+          >
             ⌘K
           </kbd>
         </button>
 
+        {/* Search button — mobile */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="sm:hidden text-muted-foreground hover:text-foreground transition-colors"
+          className="sm:hidden transition-colors"
+          style={{ color: '#8B7355' }}
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
-        </button>
-
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Toggle theme"
-        >
-          {mounted ? (
-            theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />
-          ) : (
-            <div className="h-[18px] w-[18px]" />
-          )}
         </button>
       </header>
 

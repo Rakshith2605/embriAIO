@@ -2,15 +2,8 @@
 
 import { useState } from "react";
 import { ChapterVideo } from "@/types/curriculum";
-import { PlayCircle, ChevronDown, Clock, ExternalLink } from "lucide-react";
+import { PlayCircle, ChevronDown, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const sourceStyles: Record<string, string> = {
-  raschka:      "bg-primary/10 text-primary border-primary/20",
-  workshop:     "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-  freecodecamp: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-  other:        "bg-muted text-muted-foreground border-border",
-};
 
 const sourceLabels: Record<string, string> = {
   raschka:      "Raschka",
@@ -28,22 +21,32 @@ function formatDuration(seconds: number) {
 function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   const [loaded, setLoaded] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const src = video.source ?? "other";
-  const badgeStyle = sourceStyles[src] ?? sourceStyles.other;
   const label = video.label ?? sourceLabels[src] ?? "Video";
   const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`;
   const watchUrl = `https://www.youtube.com/watch?v=${video.youtubeId}`;
 
   return (
-    <div className="border-b border-border last:border-0">
-      {/* Row header — click to toggle */}
+    <div
+      style={{
+        borderBottom: '1px solid #C8B882',
+        background: '#FFFDF5',
+        borderColor: hovered ? '#C0392B' : undefined,
+        transition: 'border-color 0.15s',
+      }}
+      className="last:border-b-0"
+    >
+      {/* Row header */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/40 transition-colors text-left group"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
       >
         {/* Thumbnail */}
-        <div className="relative shrink-0 h-12 w-20 rounded-md overflow-hidden bg-muted">
+        <div className="relative shrink-0 h-12 w-20 overflow-hidden" style={{ background: '#EDE8D5' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={thumbUrl}
@@ -60,17 +63,19 @@ function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; default
 
         {/* Title + badges */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug truncate">
+          <p className="font-playfair font-bold text-[13px] leading-snug truncate" style={{ color: '#1C1610' }}>
             {video.title}
           </p>
           <div className="flex items-center gap-2 mt-1">
-            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium", badgeStyle)}>
+            <span
+              className="inline-flex items-center px-2 py-0.5 font-jetbrains text-[8.5px]"
+              style={{ border: '1px solid #C8B882', background: '#EDE8D5', color: '#5C4E35' }}
+            >
               {label}
             </span>
             {video.durationSeconds && (
-              <span className="flex items-center gap-0.5 text-[11px] text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {formatDuration(video.durationSeconds)}
+              <span className="font-jetbrains text-[8.5px]" style={{ color: '#A08E6B' }}>
+                ⏱ {formatDuration(video.durationSeconds)}
               </span>
             )}
           </div>
@@ -83,16 +88,15 @@ function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; default
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            className="p-1 transition-colors"
+            style={{ color: '#A08E6B' }}
             title="Open on YouTube"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
           <ChevronDown
-            className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform",
-              open && "rotate-180"
-            )}
+            className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+            style={{ color: '#A08E6B' }}
           />
         </div>
       </button>
@@ -100,7 +104,10 @@ function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; default
       {/* Inline player */}
       {open && (
         <div className="px-4 pb-4">
-          <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
+          <div
+            className="relative overflow-hidden bg-black aspect-video"
+            style={{ border: '1px solid #C8B882' }}
+          >
             {!loaded && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
                 <div className="h-7 w-7 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -136,10 +143,13 @@ export function VideoList({ video, extraVideos }: Props) {
 
   return (
     <section>
-      <h2 className="text-base font-semibold text-foreground mb-2">
-        Videos <span className="text-muted-foreground font-normal text-sm">({all.length})</span>
-      </h2>
-      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+      <div className="flex items-center gap-4 mb-4">
+        <p className="font-jetbrains text-[9.5px] tracking-[0.22em] uppercase whitespace-nowrap" style={{ color: '#A08E6B' }}>
+          Videos · {all.length}
+        </p>
+        <div className="flex-1 h-px" style={{ background: '#C8B882', opacity: 0.5 }} />
+      </div>
+      <div style={{ border: '1px solid #C8B882', background: '#FFFDF5' }} className="overflow-hidden">
         {all.map((v, i) => (
           <VideoRow key={v.youtubeId} video={v} defaultOpen={i === 0 && all.length === 1} />
         ))}

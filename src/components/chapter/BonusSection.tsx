@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Chapter } from "@/types/curriculum";
 import { getGithubTreeUrl } from "@/lib/utils";
-import { ChevronDown, ExternalLink, Zap, AlertTriangle } from "lucide-react";
+import { ChevronDown, ExternalLink, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -19,51 +19,79 @@ export function BonusSection({ chapter }: Props) {
     <section>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 hover:bg-accent/50 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 transition-colors"
+        style={{ border: '1px solid #C8B882', background: '#FFFDF5' }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.borderColor = '#C0392B';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.borderColor = '#C8B882';
+        }}
       >
         <div className="flex items-center gap-2.5">
-          <Zap className="h-4 w-4 text-yellow-500" />
-          <span className="font-semibold text-sm text-foreground">
+          <span className="font-jetbrains text-[9.5px] tracking-[0.22em] uppercase" style={{ color: '#5C4E35' }}>
             Bonus Materials
           </span>
-          <span className="text-xs rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20 px-2 py-0.5">
+          <span
+            className="font-jetbrains text-[8.5px] px-2 py-0.5"
+            style={{ border: '1px solid #C8B882', background: '#EDE8D5', color: '#8B7355' }}
+          >
             {chapter.bonusFolders.length}
           </span>
         </div>
         <ChevronDown
-          className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")}
+          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+          style={{ color: '#A08E6B' }}
         />
       </button>
 
       {open && (
-        <div className="mt-2 rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+        <div
+          className="divide-y overflow-hidden"
+          style={{ border: '1px solid #C8B882', borderTop: 'none', background: '#FFFDF5', borderColor: '#C8B882' }}
+        >
           {chapter.bonusFolders.map((folder) => (
             <a
               key={folder.slug}
               href={getGithubTreeUrl(folder.githubPath)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-start gap-3 px-4 py-3 hover:bg-accent/40 transition-colors group"
+              className="flex items-start gap-3 px-4 py-3 transition-colors group"
+              style={{ borderBottom: '1px solid #C8B882' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(192,57,43,0.03)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                  <span
+                    className="font-playfair text-[13px] transition-colors"
+                    style={{ color: '#1C1610' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#1C1610'; }}
+                  >
                     {folder.title}
                   </span>
                   {folder.gpuRequired && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">
+                    <span
+                      className="inline-flex items-center gap-1 font-jetbrains text-[8px] px-1.5 py-0.5"
+                      style={{ border: '1px solid #C8B882', color: '#8B7355' }}
+                    >
                       <AlertTriangle className="h-2.5 w-2.5" />
                       GPU
                     </span>
                   )}
                 </div>
                 {folder.description && (
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  <p className="font-jetbrains text-[9px] mt-0.5 leading-relaxed" style={{ color: '#A08E6B' }}>
                     {folder.description}
                   </p>
                 )}
               </div>
-              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: '#A08E6B' }} />
             </a>
           ))}
         </div>

@@ -7,17 +7,20 @@ import { SidebarFooter } from "./SidebarFooter";
 
 export function AppSidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside
+      style={{ background: '#EDE8D5', borderRight: '1px solid #C8B882' }}
+      className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col"
+    >
       <SidebarHeader />
       <nav className="flex-1 overflow-y-auto py-3 space-y-0.5">
-        <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+        <p className="px-4 pb-1 font-jetbrains text-[8.5px] tracking-[0.2em] uppercase" style={{ color: '#A08E6B' }}>
           Chapters
         </p>
         {CURRICULUM.chapters.map((chapter) => (
           <SidebarChapterGroup key={chapter.id} chapter={chapter} />
         ))}
-        <div className="my-2 mx-4 border-t border-sidebar-border" />
-        <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+        <div className="my-2 mx-4" style={{ borderTop: '1px solid #C8B882' }} />
+        <p className="px-4 pb-1 font-jetbrains text-[8.5px] tracking-[0.2em] uppercase" style={{ color: '#A08E6B' }}>
           Appendices
         </p>
         {CURRICULUM.appendices.map((chapter) => (

@@ -3,23 +3,22 @@
 import Link from "next/link";
 import { Chapter, CompletionStatus } from "@/types/curriculum";
 import { useProgress } from "@/hooks/useProgress";
-import { cn } from "@/lib/utils";
 import {
   CheckCircle2, Circle, Clock, BookOpen,
   Dumbbell, Star, FileCode2, ArrowRight, Timer,
 } from "lucide-react";
 
 const typeConfig = {
-  main:         { label: "Main",         icon: BookOpen,   className: "bg-primary/10 text-primary border-primary/20" },
-  exercise:     { label: "Exercises",    icon: Dumbbell,   className: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20" },
-  bonus:        { label: "Bonus",        icon: Star,       className: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20" },
-  supplemental: { label: "Supplemental", icon: FileCode2,  className: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20" },
+  main:         { label: "Main",         icon: BookOpen  },
+  exercise:     { label: "Exercises",    icon: Dumbbell  },
+  bonus:        { label: "Bonus",        icon: Star      },
+  supplemental: { label: "Supplemental", icon: FileCode2 },
 };
 
-const statusConfig: Record<CompletionStatus, { icon: typeof Circle; dotClass: string }> = {
-  not_started: { icon: Circle,       dotClass: "text-muted-foreground/40" },
-  in_progress: { icon: Clock,        dotClass: "text-yellow-500" },
-  completed:   { icon: CheckCircle2, dotClass: "text-green-500" },
+const statusConfig: Record<CompletionStatus, { icon: typeof Circle; color: string }> = {
+  not_started: { icon: Circle,       color: '#A08E6B' },
+  in_progress: { icon: Clock,        color: '#C0392B' },
+  completed:   { icon: CheckCircle2, color: '#C0392B' },
 };
 
 interface Props {
@@ -37,35 +36,43 @@ export function NotebookList({ chapter }: Props) {
 
   return (
     <section>
-      <h2 className="text-base font-semibold text-foreground mb-2">
-        Notebooks <span className="text-muted-foreground font-normal text-sm">({chapter.mainNotebooks.length})</span>
-      </h2>
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-4 mb-4">
+        <p className="font-jetbrains text-[9.5px] tracking-[0.22em] uppercase whitespace-nowrap" style={{ color: '#A08E6B' }}>
+          Notebooks · {chapter.mainNotebooks.length}
+        </p>
+        <div className="flex-1 h-px" style={{ background: '#C8B882', opacity: 0.5 }} />
+      </div>
+      <div style={{ border: '1px solid #C8B882', background: '#FFFDF5' }} className="overflow-hidden">
         {chapter.mainNotebooks.map((nb, i) => {
           const status: CompletionStatus = isHydrated ? getNotebookStatus(nb.slug) : "not_started";
           const typeInfo = typeConfig[nb.type];
           const TypeIcon = typeInfo.icon;
-          const { icon: StatusIcon, dotClass } = statusConfig[status];
+          const { icon: StatusIcon, color: statusColor } = statusConfig[status];
 
           return (
             <Link
               key={nb.slug}
               href={`${baseHref}/notebook/${nb.slug}`}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3.5 hover:bg-accent/40 transition-colors group",
-                i < chapter.mainNotebooks.length - 1 && "border-b border-border",
-                status === "completed" && "bg-green-500/5 hover:bg-green-500/10"
-              )}
+              className="flex items-center gap-3 px-4 py-3.5 transition-colors group"
+              style={{
+                borderBottom: i < chapter.mainNotebooks.length - 1 ? '1px solid #C8B882' : 'none',
+                background: status === 'completed' ? 'rgba(192,57,43,0.04)' : 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(192,57,43,0.03)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background =
+                  status === 'completed' ? 'rgba(192,57,43,0.04)' : 'transparent';
+              }}
             >
               {/* Status icon */}
-              <StatusIcon className={cn("h-4 w-4 shrink-0", dotClass)} />
+              <StatusIcon className="h-4 w-4 shrink-0" style={{ color: statusColor }} />
 
               {/* Type badge */}
               <span
-                className={cn(
-                  "hidden sm:inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shrink-0",
-                  typeInfo.className
-                )}
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 font-jetbrains text-[8.5px] shrink-0"
+                style={{ border: '1px solid #C8B882', background: '#EDE8D5', color: '#5C4E35' }}
               >
                 <TypeIcon className="h-2.5 w-2.5" />
                 {typeInfo.label}
@@ -73,11 +80,16 @@ export function NotebookList({ chapter }: Props) {
 
               {/* Title + description */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                <p
+                  className="font-playfair text-[13px] truncate transition-colors"
+                  style={{ color: '#1C1610' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#1C1610'; }}
+                >
                   {nb.title}
                 </p>
                 {nb.description && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  <p className="font-jetbrains text-[9px] truncate mt-0.5" style={{ color: '#A08E6B' }}>
                     {nb.description}
                   </p>
                 )}
@@ -85,14 +97,14 @@ export function NotebookList({ chapter }: Props) {
 
               {/* Time estimate */}
               {nb.estimatedMinutes && (
-                <span className="hidden md:flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+                <span className="hidden md:flex items-center gap-1 font-jetbrains text-[9px] shrink-0" style={{ color: '#A08E6B' }}>
                   <Timer className="h-3 w-3" />
                   ~{nb.estimatedMinutes}m
                 </span>
               )}
 
               {/* Arrow */}
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-all group-hover:translate-x-0.5" style={{ color: '#C0392B' }} />
             </Link>
           );
         })}

@@ -11,7 +11,12 @@ export default function LearnLayout({ children }: { children: React.ReactNode })
 
   return (
     <ProgressProvider>
-      <div className="min-h-screen bg-background">
+      <div style={{
+        background: '#F7F2E7',
+        backgroundImage: 'linear-gradient(rgba(180,160,100,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(180,160,100,0.12) 1px, transparent 1px)',
+        backgroundSize: '28px 28px',
+        minHeight: '100vh',
+      }}>
         <AppSidebar />
         {mobileMenuOpen && (
           <div

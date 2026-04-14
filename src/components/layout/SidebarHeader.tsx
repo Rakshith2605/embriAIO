@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export function SidebarHeader() {
   return (
-    <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0f0e1a] shrink-0">
+    <div className="flex items-center gap-3 px-4 py-4" style={{ borderBottom: '1px solid #C8B882' }}>
+      <div className="shrink-0">
         <Image
           src="/favicon.svg"
           alt="EmbriAIO"
@@ -16,10 +16,10 @@ export function SidebarHeader() {
       </div>
       <div className="min-w-0">
         <Link href="/" className="block">
-          <p className="text-sm font-semibold text-sidebar-foreground leading-tight truncate">
+          <p className="font-playfair font-bold text-[14px] leading-tight truncate" style={{ color: '#1C1610' }}>
             LLMs from Scratch
           </p>
-          <p className="text-xs text-sidebar-foreground/60 truncate">
+          <p className="font-jetbrains text-[9px] tracking-[0.12em] uppercase truncate" style={{ color: '#8B7355' }}>
             Sebastian Raschka
           </p>
         </Link>

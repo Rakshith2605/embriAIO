@@ -9,23 +9,25 @@ export function SidebarFooter() {
   const { dispatch } = useProgressContext();
 
   return (
-    <div className="border-t border-sidebar-border px-4 py-4 space-y-3">
+    <div className="px-4 py-4 space-y-3" style={{ borderTop: '1px solid #C8B882' }}>
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-sidebar-foreground/70">Overall Progress</span>
-          <span className="font-medium text-sidebar-foreground">
-            {isHydrated ? `${percentComplete}%` : "—"}
+        <div className="flex items-center justify-between">
+          <span className="font-jetbrains text-[9px] uppercase tracking-[0.1em]" style={{ color: '#8B7355' }}>
+            Overall Progress
+          </span>
+          <span className="font-jetbrains text-[9px]" style={{ color: '#1C1610' }}>
+            {isHydrated ? `${percentComplete}%` : '—'}
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-sidebar-border overflow-hidden">
+        <div className="h-[3px] overflow-hidden" style={{ background: 'rgba(200,184,130,0.3)' }}>
           <div
-            className="h-full rounded-full bg-sidebar-primary transition-all duration-500"
-            style={{ width: isHydrated ? `${percentComplete}%` : "0%" }}
+            className="h-full transition-all duration-500"
+            style={{ width: isHydrated ? `${percentComplete}%` : '0%', background: '#C0392B' }}
           />
         </div>
         {isHydrated && completedNotebooks > 0 && (
-          <p className="text-xs text-sidebar-foreground/50">
-            {completedNotebooks} notebook{completedNotebooks !== 1 ? "s" : ""} completed
+          <p className="font-jetbrains text-[9px]" style={{ color: '#8B7355' }}>
+            {completedNotebooks} notebook{completedNotebooks !== 1 ? 's' : ''} completed
           </p>
         )}
       </div>
@@ -35,19 +37,25 @@ export function SidebarFooter() {
           href="https://github.com/rasbt/LLMs-from-scratch"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
+          className="flex items-center gap-1.5 font-jetbrains text-[9px] transition-colors"
+          style={{ color: '#8B7355' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
         >
           <ExternalLink className="h-3 w-3" />
           GitHub Repo
         </a>
-        <span className="text-sidebar-border">·</span>
+        <span style={{ color: '#C8B882' }}>·</span>
         <button
           onClick={() => {
-            if (confirm("Reset all progress? This cannot be undone.")) {
-              dispatch({ type: "RESET_ALL" });
+            if (confirm('Reset all progress? This cannot be undone.')) {
+              dispatch({ type: 'RESET_ALL' });
             }
           }}
-          className="flex items-center gap-1.5 text-xs text-sidebar-foreground/60 hover:text-destructive transition-colors"
+          className="flex items-center gap-1.5 font-jetbrains text-[9px] transition-colors"
+          style={{ color: '#8B7355' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
         >
           <RotateCcw className="h-3 w-3" />
           Reset

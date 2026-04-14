@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CompletionStatus } from "@/types/curriculum";
-import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 
 interface Props {
@@ -13,9 +12,9 @@ interface Props {
 }
 
 const statusIcons = {
-  completed: <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />,
-  in_progress: <Clock className="h-3.5 w-3.5 text-yellow-400 shrink-0" />,
-  not_started: <Circle className="h-3.5 w-3.5 text-sidebar-foreground/30 shrink-0" />,
+  completed:   <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: '#C0392B' }} />,
+  in_progress: <Clock        className="h-3 w-3 shrink-0" style={{ color: '#C0392B' }} />,
+  not_started: <Circle       className="h-3 w-3 shrink-0" style={{ color: '#A08E6B' }} />,
 };
 
 export function SidebarNotebookItem({ href, label, status }: Props) {
@@ -25,12 +24,23 @@ export function SidebarNotebookItem({ href, label, status }: Props) {
   return (
     <Link
       href={href}
-      className={cn(
-        "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs transition-colors group",
-        isActive
-          ? "bg-sidebar-primary text-sidebar-primary-foreground"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-      )}
+      className="flex items-center gap-2 py-1 pl-8 pr-4 transition-colors font-jetbrains text-[9px]"
+      style={{
+        background: isActive ? 'rgba(192,57,43,0.06)' : 'transparent',
+        color: isActive ? '#C0392B' : '#5C4E35',
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          (e.currentTarget as HTMLElement).style.background = 'rgba(192,57,43,0.04)';
+          (e.currentTarget as HTMLElement).style.color = '#C0392B';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          (e.currentTarget as HTMLElement).style.background = 'transparent';
+          (e.currentTarget as HTMLElement).style.color = '#5C4E35';
+        }
+      }}
     >
       {statusIcons[status]}
       <span className="truncate">{label}</span>

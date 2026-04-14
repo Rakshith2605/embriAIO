@@ -73,3 +73,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Parchment theme CTA hover states (used in server components) */
+.cta-primary:hover {
+  background: #C0392B !important;
+}
+.cta-secondary:hover {
+  border-color: #C0392B !important;
+  color: #C0392B !important;
+}
+
+/* Parchment video-row hover border */
+.video-row:hover {
+  border-color: #C0392B !important;
+}
