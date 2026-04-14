@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CourseDefinition } from "@/lib/courses";
-import { cn } from "@/lib/utils";
-import { ArrowRight, Lock } from "lucide-react";
 
 function readProgress(key: string, total: number): number {
   try {
@@ -29,56 +27,60 @@ export function CourseCard({ course }: { course: CourseDefinition }) {
 
   const available = course.status === "available" || course.status === "beta";
 
-  // Derive a border-left color class from the accentColor (text-X-400 → border-X-400)
-  const accentBorder = course.accentColor.replace("text-", "border-");
-
   const inner = (
     <div
-      className={cn(
-        "group flex flex-col gap-4 rounded-xl border border-l-2 p-5 transition-all",
-        accentBorder,
+      style={
         available
-          ? "border-border bg-card hover:border-ring/40 hover:shadow-md hover:shadow-black/20 cursor-pointer"
-          : "border-border/40 bg-card/40 cursor-default"
-      )}
+          ? { border: '1px solid #C8B882', background: '#FFFDF5', transition: 'border-color 0.2s' }
+          : { border: '1px dashed #C8B882', background: 'rgba(255,253,245,0.6)' }
+      }
+      className={`group flex flex-col gap-3 p-5 rounded-none ${available ? 'hover:border-pg-rust cursor-pointer' : 'opacity-75 cursor-default'}`}
     >
       {/* Title row */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className={cn("text-sm font-semibold leading-snug", available ? "text-foreground" : "text-foreground/40")}>
+        <h3 className="font-playfair font-bold text-[22px] text-pg-ink leading-snug">
           {course.title}
         </h3>
         {!available && (
-          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] text-muted-foreground/60">
-            <Lock className="h-3 w-3" />
+          <span className="shrink-0 font-jetbrains text-[10px] tracking-widest uppercase text-pg-faint pt-1">
             Soon
           </span>
         )}
       </div>
 
-      {/* Stats */}
-      <div className={cn("flex items-center gap-5 text-xs", available ? "text-muted-foreground" : "text-muted-foreground/40")}>
-        {course.chapters && <span>{course.chapters} chapters</span>}
-        {course.videos   && <span>{course.videos} videos</span>}
-        {course.notebooks && <span>{course.notebooks} notebooks</span>}
-      </div>
+      {/* Metadata line */}
+      <p className="font-jetbrains text-[11px] text-pg-faint tracking-wide">
+        {[
+          course.chapters ? `${course.chapters} chapters` : null,
+          course.videos   ? `${course.videos} videos`   : null,
+          course.notebooks ? `${course.notebooks} notebooks` : null,
+        ]
+          .filter(Boolean)
+          .join('  ·  ')}
+      </p>
 
       {/* Progress bar */}
       {available && progress !== null && progress > 0 && (
-        <div className="space-y-1">
-          <div className="h-1 rounded-full bg-muted overflow-hidden">
+        <div className="space-y-1 mt-1">
+          <div className="h-0.5 bg-pg-gold/30 overflow-hidden w-full">
             <div
-              className={cn("h-full rounded-full transition-all", course.accentColor.replace("text-", "bg-"))}
+              className="h-full bg-pg-rust transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-[10px] text-muted-foreground">{progress}% complete</p>
+          <p className="font-jetbrains text-[10px] text-pg-faint">{progress}% complete</p>
         </div>
       )}
 
       {/* Arrow */}
       {available && (
-        <div className="flex justify-end">
-          <ArrowRight className={cn("h-4 w-4 transition-transform group-hover:translate-x-0.5", course.accentColor)} />
+        <div className="flex justify-end mt-1">
+          <span
+            className="font-jetbrains text-[16px] text-pg-rust group-hover:translate-x-0.5 transition-transform inline-block"
+            aria-hidden
+          >
+            →
+          </span>
         </div>
       )}
     </div>

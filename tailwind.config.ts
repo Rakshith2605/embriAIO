@@ -53,6 +53,20 @@ const config: Config = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        pg: {
+          parchment: '#F7F2E7',
+          surface:   '#FFFDF5',
+          ink:       '#1C1610',
+          muted:     '#5C4E35',
+          faint:     '#8B7355',
+          rust:      '#C0392B',
+          gold:      '#C8B882',
+        },
+      },
+      fontFamily: {
+        playfair:       ['var(--font-playfair)', 'Georgia', 'serif'],
+        'source-serif': ['var(--font-source-serif)', 'Georgia', 'serif'],
+        jetbrains:      ['var(--font-jetbrains)', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",
