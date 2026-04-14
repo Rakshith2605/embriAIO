@@ -19,7 +19,9 @@ export function LandingNav() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0f0e1a] shrink-0 ring-1 ring-white/10 group-hover:ring-white/20 transition-all">
             <Image src="/favicon.svg" alt="embriAIO" width={22} height={22} className="rounded-sm" priority />
           </div>
-          <span className="text-sm font-semibold text-foreground tracking-tight">embriAIO</span>
+          <span className="text-sm font-normal text-foreground tracking-tight">
+            embri<span className="font-bold">AI</span>o
+          </span>
         </Link>
 
         {/* Right controls */}
