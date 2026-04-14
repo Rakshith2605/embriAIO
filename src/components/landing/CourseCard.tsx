@@ -29,12 +29,16 @@ export function CourseCard({ course }: { course: CourseDefinition }) {
 
   const available = course.status === "available" || course.status === "beta";
 
+  // Derive a border-left color class from the accentColor (text-X-400 → border-X-400)
+  const accentBorder = course.accentColor.replace("text-", "border-");
+
   const inner = (
     <div
       className={cn(
-        "group flex flex-col gap-4 rounded-xl border p-5 transition-all",
+        "group flex flex-col gap-4 rounded-xl border border-l-2 p-5 transition-all",
+        accentBorder,
         available
-          ? "border-border bg-card hover:border-ring/50 hover:shadow-md cursor-pointer"
+          ? "border-border bg-card hover:border-ring/40 hover:shadow-md hover:shadow-black/20 cursor-pointer"
           : "border-border/40 bg-card/40 cursor-default"
       )}
     >
