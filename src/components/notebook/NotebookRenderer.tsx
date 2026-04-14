@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { marked } from "marked";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, AlertTriangle, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { getGithubUrl } from "@/lib/utils";
 
 // ─── Notebook JSON types ──────────────────────────────────────────────────────
@@ -64,13 +62,11 @@ function joinSource(s: string | string[]): string {
   return Array.isArray(s) ? s.join("") : s;
 }
 
-// Strip ANSI escape codes from traceback strings
 function stripAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
   return str.replace(/\x1b\[[0-9;]*[mGKHF]/g, "");
 }
 
-// Convert a markdown string to safe HTML using marked
 function mdToHtml(md: string): string {
   try {
     const result = marked.parse(md, { async: false });
@@ -85,14 +81,16 @@ function mdToHtml(md: string): string {
 function StreamOut({ output }: { output: StreamOutput }) {
   const text = joinSource(output.text);
   if (!text) return null;
+  const isErr = output.name === "stderr";
   return (
     <pre
-      className={cn(
-        "text-xs font-mono whitespace-pre-wrap break-words leading-relaxed px-4 py-3 rounded-md my-1",
-        output.name === "stderr"
-          ? "bg-red-950/40 text-red-300 border border-red-800/40"
-          : "bg-muted/60 text-foreground/80"
-      )}
+      style={{
+        background: isErr ? 'rgba(192,57,43,0.06)' : 'rgba(200,184,130,0.15)',
+        border: isErr ? '1px solid rgba(192,57,43,0.3)' : '1px solid #C8B882',
+        color: isErr ? '#C0392B' : '#1C1610',
+        borderLeft: isErr ? '3px solid #C0392B' : undefined,
+      }}
+      className="text-xs font-jetbrains whitespace-pre-wrap break-words leading-relaxed px-4 py-3 my-1"
     >
       {text}
     </pre>
@@ -102,21 +100,19 @@ function StreamOut({ output }: { output: StreamOutput }) {
 function ExecuteOut({ output }: { output: ExecuteResult | DisplayData }) {
   const data = output.data;
 
-  // Prefer image/png
   if (data["image/png"]) {
     return (
-      <div className="my-2">
+      <div className="my-2" style={{ border: '1px solid #C8B882', display: 'inline-block', background: '#FFFDF5' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`data:image/png;base64,${data["image/png"]}`}
           alt="cell output"
-          className="max-w-full rounded-md"
+          className="max-w-full block"
         />
       </div>
     );
   }
 
-  // SVG
   if (data["image/svg+xml"]) {
     const svg = joinSource(data["image/svg+xml"]);
     return (
@@ -127,22 +123,27 @@ function ExecuteOut({ output }: { output: ExecuteResult | DisplayData }) {
     );
   }
 
-  // HTML output
   if (data["text/html"]) {
     const html = joinSource(data["text/html"]);
     return (
       <div
-        className="my-1 overflow-x-auto text-sm [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:bg-muted/50"
+        className="my-1 overflow-x-auto text-[13px] font-source-serif"
+        style={{
+          color: '#1C1610',
+        }}
+        // Table styles applied via globals.css or inline
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   }
 
-  // Plain text fallback
   if (data["text/plain"]) {
     const text = joinSource(data["text/plain"]);
     return (
-      <pre className="text-xs font-mono whitespace-pre-wrap break-words leading-relaxed px-4 py-3 rounded-md my-1 bg-muted/60 text-foreground/80">
+      <pre
+        className="text-xs font-jetbrains whitespace-pre-wrap break-words leading-relaxed px-4 py-3 my-1"
+        style={{ background: 'rgba(200,184,130,0.15)', border: '1px solid #C8B882', color: '#1C1610' }}
+      >
         {text}
       </pre>
     );
@@ -158,20 +159,24 @@ function ErrorOut({ output }: { output: ErrorOutput }) {
   const full = lines.join("\n");
 
   return (
-    <div className="my-1 rounded-md border border-red-800/50 bg-red-950/30 overflow-hidden">
+    <div
+      className="my-1 overflow-hidden"
+      style={{ border: '1px solid rgba(192,57,43,0.4)', borderLeft: '3px solid #C0392B', background: 'rgba(192,57,43,0.04)' }}
+    >
       <div
-        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-red-950/40 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors"
+        style={{ borderBottom: expanded ? '1px solid rgba(192,57,43,0.2)' : 'none' }}
         onClick={() => setExpanded((p) => !p)}
       >
         {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 text-red-400 shrink-0" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0" style={{ color: '#C0392B' }} />
         ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-red-400 shrink-0" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0" style={{ color: '#C0392B' }} />
         )}
-        <span className="text-xs font-mono text-red-400 font-semibold">{output.ename}</span>
-        <span className="text-xs font-mono text-red-300/70 truncate">{output.evalue}</span>
+        <span className="text-xs font-jetbrains font-semibold" style={{ color: '#C0392B' }}>{output.ename}</span>
+        <span className="text-xs font-jetbrains truncate" style={{ color: '#8B7355' }}>{output.evalue}</span>
       </div>
-      <pre className="text-xs font-mono whitespace-pre-wrap break-words leading-relaxed px-3 pb-2 text-red-300/80">
+      <pre className="text-xs font-jetbrains whitespace-pre-wrap break-words leading-relaxed px-3 pb-2 pt-1" style={{ color: '#5C4E35' }}>
         {expanded ? full : preview}
       </pre>
     </div>
@@ -199,21 +204,15 @@ function MarkdownCell({ source }: { source: string }) {
   const html = mdToHtml(source);
   return (
     <div
-      className={cn(
-        "prose prose-sm dark:prose-invert max-w-none py-2",
-        "prose-headings:font-semibold prose-headings:text-foreground",
-        "prose-p:text-foreground/90 prose-p:leading-relaxed",
-        "prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono prose-code:text-foreground",
-        "prose-pre:bg-muted prose-pre:rounded-md prose-pre:text-xs",
-        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-        "prose-strong:text-foreground",
-        "prose-blockquote:border-l-primary/50 prose-blockquote:text-muted-foreground",
-        "prose-table:text-sm",
-        "[&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1.5 [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1.5 [&_th]:bg-muted/50 [&_th]:text-foreground",
-        "[&_img]:max-w-full [&_img]:rounded-md"
-      )}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+      className="py-2 px-2"
+      style={{ color: '#1C1610' }}
+      // Prose styles injected below via a class
+    >
+      <div
+        className="nb-prose"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </div>
   );
 }
 
@@ -229,20 +228,26 @@ function CodeCell({
   const label = execCount != null ? `[${execCount}]` : "[ ]";
 
   return (
-    <div className="my-1">
+    <div className="my-2">
       {/* Input */}
       <div className="flex gap-2 items-start">
-        <span className="text-[10px] font-mono text-muted-foreground/50 mt-2.5 shrink-0 w-10 text-right select-none">
+        <span
+          className="text-[10px] font-jetbrains mt-2.5 shrink-0 w-10 text-right select-none"
+          style={{ color: '#A08E6B' }}
+        >
           {label}
         </span>
-        <pre className="flex-1 overflow-x-auto text-xs font-mono leading-relaxed px-4 py-3 rounded-md bg-muted/40 text-foreground/85 whitespace-pre-wrap break-words">
+        <pre
+          className="flex-1 overflow-x-auto text-xs font-jetbrains leading-relaxed px-4 py-3 whitespace-pre-wrap break-words"
+          style={{ background: '#EDE8D5', border: '1px solid #C8B882', color: '#1C1610' }}
+        >
           {source}
         </pre>
       </div>
       {/* Outputs */}
       {outputs && outputs.length > 0 && (
-        <div className="flex gap-2 items-start">
-          <span className="text-[10px] font-mono text-muted-foreground/30 mt-2.5 shrink-0 w-10 text-right select-none">
+        <div className="flex gap-2 items-start mt-1">
+          <span className="text-[10px] font-jetbrains mt-2.5 shrink-0 w-10 text-right select-none" style={{ color: 'transparent' }}>
             &nbsp;
           </span>
           <div className="flex-1 min-w-0">
@@ -250,6 +255,37 @@ function CodeCell({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div
+      className="flex flex-col overflow-hidden"
+      style={{ border: '1px solid #C8B882', background: '#FFFDF5', minHeight: '24rem' }}
+    >
+      <div className="flex items-center gap-3 px-6 py-5" style={{ borderBottom: '1px solid #C8B882' }}>
+        <div
+          className="h-4 w-4 rounded-full border-2 animate-spin shrink-0"
+          style={{ borderColor: 'rgba(200,184,130,0.4)', borderTopColor: '#C0392B' }}
+        />
+        <div>
+          <p className="font-playfair text-[14px]" style={{ color: '#1C1610' }}>Loading notebook…</p>
+          <p className="font-jetbrains text-[10px] mt-0.5" style={{ color: '#A08E6B' }}>Rendering pre-computed outputs</p>
+        </div>
+      </div>
+      <div className="px-6 space-y-4 py-6">
+        {[60, 100, 40, 80, 50].map((w, i) => (
+          <div
+            key={i}
+            className="h-4 animate-pulse"
+            style={{ width: `${w}%`, background: 'rgba(200,184,130,0.3)' }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -264,7 +300,7 @@ interface Props {
   height?: string;
 }
 
-export function NotebookRenderer({ chapterId, filename, githubPath, title, height = "calc(100vh - 12rem)" }: Props) {
+export function NotebookRenderer({ chapterId, filename, githubPath, height = "calc(100vh - 14rem)" }: Props) {
   const [notebook, setNotebook] = useState<RawNotebook | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -294,39 +330,30 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
     load();
   }, [load]);
 
-  // ── Loading skeleton ──
-  if (status === "loading") {
-    return (
-      <div className="flex flex-col rounded-xl border border-border overflow-hidden bg-background" style={{ minHeight: "24rem" }}>
-        <div className="flex items-center gap-3 px-6 py-5">
-          <div className="h-5 w-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Loading notebook…</p>
-            <p className="text-xs text-muted-foreground">Rendering pre-computed outputs</p>
-          </div>
-        </div>
-        <div className="px-6 space-y-3 pb-6">
-          <Skeleton className="h-6 w-2/3" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-5 w-1/2" />
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-6 w-3/4" />
-        </div>
-      </div>
-    );
-  }
+  if (status === "loading") return <LoadingSkeleton />;
 
-  // ── Error state ──
   if (status === "error" || !notebook) {
     return (
-      <div className="rounded-xl border border-border p-8 text-center space-y-3">
-        <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
-        <p className="text-sm font-medium text-foreground">Could not load notebook</p>
-        <p className="text-xs text-muted-foreground">{errorMsg}</p>
+      <div
+        className="p-8 text-center space-y-4"
+        style={{ border: '1px solid #C8B882', background: '#FFFDF5' }}
+      >
+        <AlertTriangle className="h-8 w-8 mx-auto" style={{ color: '#C0392B' }} />
+        <p className="font-playfair text-[16px]" style={{ color: '#1C1610' }}>Could not load notebook</p>
+        <p className="font-jetbrains text-[11px]" style={{ color: '#A08E6B' }}>{errorMsg}</p>
         <div className="flex justify-center gap-3 pt-2">
           <button
             onClick={load}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 font-jetbrains text-[10px] uppercase tracking-[0.08em] transition-colors"
+            style={{ border: '1px solid #C8B882', color: '#5C4E35' }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = '#C0392B';
+              (e.currentTarget as HTMLElement).style.color = '#C0392B';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = '#C8B882';
+              (e.currentTarget as HTMLElement).style.color = '#5C4E35';
+            }}
           >
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </button>
@@ -334,7 +361,8 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
             href={colabUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-[#F9AB00] text-black hover:bg-[#F9AB00]/90 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 font-jetbrains text-[10px] uppercase tracking-[0.08em] transition-colors"
+            style={{ background: '#F9AB00', color: '#000', border: '1px solid transparent' }}
           >
             <ExternalLink className="h-3.5 w-3.5" /> Open in Colab
           </a>
@@ -343,19 +371,27 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
     );
   }
 
-  // ── Rendered notebook ──
   return (
-    <div className="flex flex-col rounded-xl border border-border overflow-hidden bg-background">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30 sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <div className="h-3 w-3 rounded-full bg-red-500/70" />
-            <div className="h-3 w-3 rounded-full bg-yellow-500/70" />
-            <div className="h-3 w-3 rounded-full bg-green-500/70" />
-          </div>
-          <span className="text-xs text-muted-foreground font-mono truncate max-w-xs">{filename}</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full border font-medium bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+    <div
+      className="flex flex-col overflow-hidden"
+      style={{ border: '1px solid #C8B882', background: '#FFFDF5' }}
+    >
+      {/* Chrome bar */}
+      <div
+        className="flex items-center justify-between px-4 py-2 shrink-0"
+        style={{ borderBottom: '1px solid #C8B882', background: '#EDE8D5' }}
+      >
+        <div className="flex items-center gap-3">
+          <span
+            className="font-jetbrains text-[9px] truncate max-w-xs"
+            style={{ color: '#8B7355' }}
+          >
+            {filename}
+          </span>
+          <span
+            className="inline-flex items-center px-2 py-0.5 font-jetbrains text-[8px] tracking-wide"
+            style={{ border: '1px solid #C8B882', color: '#A08E6B', background: '#F7F2E7' }}
+          >
             Read-only
           </span>
         </div>
@@ -364,21 +400,24 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
             href={colabUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium bg-[#F9AB00] text-black hover:bg-[#F9AB00]/90 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 font-jetbrains text-[10px] uppercase tracking-[0.06em] transition-opacity hover:opacity-80"
+            style={{ background: '#F9AB00', color: '#000' }}
             title="Open in Google Colab"
           >
-            {/* Colab logo mark */}
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
               <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.25 17.292l-4.5-4.364 1.857-1.857 2.643 2.506 5.643-5.643 1.857 1.857-7.5 7.501z"/>
             </svg>
-            Open in Colab
+            Colab
           </a>
           <a
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="transition-colors"
+            style={{ color: '#A08E6B' }}
             title="Open on GitHub"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#A08E6B'; }}
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -386,7 +425,7 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
       </div>
 
       {/* Cells */}
-      <div className="overflow-y-auto px-4 py-4 space-y-1" style={{ height }}>
+      <div className="overflow-y-auto px-6 py-5 space-y-1" style={{ height }}>
         {notebook.cells.map((cell, i) => {
           const source = joinSource(cell.source);
           if (!source.trim() && (!cell.outputs || cell.outputs.length === 0)) return null;
@@ -410,10 +449,13 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
             );
           }
 
-          // raw cells: just show as plain text
           if (cell.cell_type === "raw" && source.trim()) {
             return (
-              <pre key={i} className="text-xs font-mono whitespace-pre-wrap px-4 py-3 rounded-md bg-muted/30 text-muted-foreground">
+              <pre
+                key={i}
+                className="text-xs font-jetbrains whitespace-pre-wrap px-4 py-3 my-1"
+                style={{ background: 'rgba(200,184,130,0.2)', border: '1px solid #C8B882', color: '#5C4E35' }}
+              >
                 {source}
               </pre>
             );
@@ -424,18 +466,37 @@ export function NotebookRenderer({ chapterId, filename, githubPath, title, heigh
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-border bg-muted/30 flex items-center justify-between shrink-0">
-        <p className="text-[11px] text-muted-foreground">
+      <div
+        className="px-4 py-2 flex items-center justify-between shrink-0"
+        style={{ borderTop: '1px solid #C8B882', background: '#EDE8D5' }}
+      >
+        <p className="font-jetbrains text-[10px]" style={{ color: '#A08E6B' }}>
           Pre-computed outputs · To run cells,{" "}
-          <a href={colabUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+          <a
+            href={colabUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline transition-colors"
+            style={{ color: '#8B7355' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
+          >
             open in Colab
-          </a>{" "}
-          or{" "}
-          <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+          </a>
+          {" "}or{" "}
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline transition-colors"
+            style={{ color: '#8B7355' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
+          >
             clone from GitHub
           </a>
         </p>
-        <p className="text-[11px] text-muted-foreground shrink-0">
+        <p className="font-jetbrains text-[10px] shrink-0" style={{ color: '#A08E6B' }}>
           {notebook.cells.length} cells
         </p>
       </div>

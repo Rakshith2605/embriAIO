@@ -87,3 +87,93 @@
 .video-row:hover {
   border-color: #C0392B !important;
 }
+
+/* Notebook markdown prose — parchment typography */
+.nb-prose h1, .nb-prose h2, .nb-prose h3, .nb-prose h4 {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-weight: 700;
+  color: #1C1610;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+.nb-prose h1 { font-size: 1.35rem; }
+.nb-prose h2 { font-size: 1.15rem; }
+.nb-prose h3 { font-size: 1rem; }
+.nb-prose p {
+  font-family: var(--font-source-serif), Georgia, serif;
+  font-weight: 300;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #1C1610;
+  margin-bottom: 0.75em;
+}
+.nb-prose a { color: #C0392B; text-decoration: underline; }
+.nb-prose a:hover { color: #8B0000; }
+.nb-prose strong { font-weight: 600; color: #1C1610; }
+.nb-prose em { font-style: italic; color: #5C4E35; }
+.nb-prose code {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 0.78rem;
+  background: #EDE8D5;
+  border: 1px solid #C8B882;
+  padding: 0.1em 0.4em;
+  color: #1C1610;
+}
+.nb-prose pre {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 0.78rem;
+  background: #EDE8D5;
+  border: 1px solid #C8B882;
+  padding: 1rem;
+  overflow-x: auto;
+  color: #1C1610;
+  margin: 0.75em 0;
+}
+.nb-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.nb-prose ul, .nb-prose ol {
+  font-family: var(--font-source-serif), Georgia, serif;
+  font-weight: 300;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #1C1610;
+  margin: 0.5em 0 0.75em 1.5em;
+}
+.nb-prose li { margin-bottom: 0.25em; }
+.nb-prose blockquote {
+  border-left: 3px solid #C8B882;
+  padding-left: 1rem;
+  color: #5C4E35;
+  font-style: italic;
+  margin: 0.75em 0;
+}
+.nb-prose table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-family: var(--font-jetbrains), monospace;
+  width: 100%;
+  margin: 0.75em 0;
+}
+.nb-prose th {
+  background: #EDE8D5;
+  border: 1px solid #C8B882;
+  padding: 0.4em 0.75em;
+  text-align: left;
+  color: #1C1610;
+  font-weight: 500;
+}
+.nb-prose td {
+  border: 1px solid #C8B882;
+  padding: 0.35em 0.75em;
+  color: #1C1610;
+}
+.nb-prose img { max-width: 100%; }
+.nb-prose hr {
+  border: none;
+  border-top: 1px solid #C8B882;
+  margin: 1.25em 0;
+}
