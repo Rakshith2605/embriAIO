@@ -1,9 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useReducer, useEffect, useState } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import { ProgressState, ProgressAction, ChapterId } from "@/types/curriculum";
 
 const STORAGE_KEY = "embriAIO_progress_v1";
+const SYNC_DEBOUNCE_MS = 2000;
+
+// ─── Reducer ──────────────────────────────────────────────────────────────────
 
 function createEmptyChapterProgress(chapterId: ChapterId) {
   return { chapterId, notebookProgress: {}, videoWatched: false };
@@ -101,6 +105,45 @@ function progressReducer(state: ProgressState, action: ProgressAction): Progress
   }
 }
 
+// ─── Redis merge ──────────────────────────────────────────────────────────────
+
+function mergeProgressStates(local: ProgressState, remote: ProgressState): ProgressState {
+  const merged: ProgressState = {
+    ...local,
+    lastUpdatedAt: new Date().toISOString(),
+    chapters: { ...local.chapters },
+  };
+
+  for (const [chapterId, remoteChapter] of Object.entries(remote.chapters)) {
+    const cid = chapterId as ChapterId;
+    const localChapter = merged.chapters[cid];
+
+    if (!localChapter) {
+      merged.chapters[cid] = remoteChapter;
+      continue;
+    }
+
+    const mergedNotebooks = { ...localChapter.notebookProgress };
+    for (const [slug, remoteNb] of Object.entries(remoteChapter.notebookProgress)) {
+      const localNb = mergedNotebooks[slug];
+      // "completed" in either source wins
+      if (!localNb || remoteNb.status === "completed") {
+        mergedNotebooks[slug] = remoteNb;
+      }
+    }
+
+    merged.chapters[cid] = {
+      ...localChapter,
+      notebookProgress: mergedNotebooks,
+      videoWatched: localChapter.videoWatched || remoteChapter.videoWatched,
+    };
+  }
+
+  return merged;
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
+
 interface ProgressContextValue {
   state: ProgressState;
   dispatch: React.Dispatch<ProgressAction>;
@@ -112,7 +155,11 @@ const ProgressContext = createContext<ProgressContextValue | null>(null);
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(progressReducer, createDefaultState());
   const [isHydrated, setIsHydrated] = useState(false);
+  const { data: session } = useSession();
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didFetchRemote = useRef(false);
 
+  // 1. Hydrate from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -126,6 +173,21 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     setIsHydrated(true);
   }, []);
 
+  // 2. Once hydrated + signed in: fetch Redis and merge (once per session)
+  useEffect(() => {
+    if (!isHydrated || !session?.user?.email || didFetchRemote.current) return;
+    didFetchRemote.current = true;
+
+    fetch("/api/progress")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((remote: ProgressState | null) => {
+        if (!remote || Object.keys(remote.chapters ?? {}).length === 0) return;
+        dispatch({ type: "HYDRATE", state: mergeProgressStates(state, remote) });
+      })
+      .catch(() => {}); // fail silently — local data is the fallback
+  }, [isHydrated, session?.user?.email]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 3. Persist to localStorage on every change
   useEffect(() => {
     if (!isHydrated) return;
     try {
@@ -134,6 +196,24 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       // storage full or unavailable
     }
   }, [state, isHydrated]);
+
+  // 4. Debounced sync to Redis when signed in
+  useEffect(() => {
+    if (!isHydrated || !session?.user?.email) return;
+
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state),
+      }).catch(() => {}); // fail silently
+    }, SYNC_DEBOUNCE_MS);
+
+    return () => {
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+    };
+  }, [state, isHydrated, session?.user?.email]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <ProgressContext.Provider value={{ state, dispatch, isHydrated }}>

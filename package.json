@@ -9,6 +9,7 @@
     "prebuild": "tsx scripts/fetch-notebooks.ts"
   },
   "dependencies": {
+    "@auth/core": "^0.41.0",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-progress": "^1.1.8",
@@ -20,6 +21,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@upstash/redis": "^1.37.0",
     "autoprefixer": "^10.4.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -27,6 +29,7 @@
     "lucide-react": "^1.8.0",
     "marked": "^18.0.0",
     "next": "^14.2.35",
+    "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
     "postcss": "^8.5.9",
     "react": "^18.3.1",

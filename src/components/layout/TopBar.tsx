@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search, Menu, X } from "lucide-react";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { SearchDialog } from "@/components/search/SearchDialog";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { ALL_CHAPTERS } from "@/lib/curriculum";
 
 interface Props {
@@ -83,6 +84,9 @@ export function TopBar({ onMobileMenuToggle, mobileMenuOpen }: Props) {
             </span>
           ))}
         </nav>
+
+        {/* User menu */}
+        <UserMenu />
 
         {/* Search button — desktop */}
         <button
