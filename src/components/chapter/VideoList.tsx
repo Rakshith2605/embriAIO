@@ -151,7 +151,7 @@ export function VideoList({ video, extraVideos }: Props) {
       </div>
       <div style={{ border: '1px solid #C8B882', background: '#FFFDF5' }} className="overflow-hidden">
         {all.map((v, i) => (
-          <VideoRow key={v.youtubeId} video={v} defaultOpen={i === 0 && all.length === 1} />
+          <VideoRow key={v.youtubeId} video={v} defaultOpen={false} />
         ))}
       </div>
     </section>
