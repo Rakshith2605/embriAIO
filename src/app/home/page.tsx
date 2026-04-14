@@ -16,44 +16,88 @@ const GRAPH_PAPER_BG = {
   backgroundSize: "28px 28px",
 } as React.CSSProperties;
 
+const available = COURSES.filter((c) => c.status !== "coming-soon");
+const comingSoon = COURSES.filter((c) => c.status === "coming-soon");
+const totalChapters  = available.reduce((s, c) => s + (c.chapters  ?? 0), 0);
+const totalVideos    = available.reduce((s, c) => s + (c.videos    ?? 0), 0);
+const totalNotebooks = available.reduce((s, c) => s + (c.notebooks ?? 0), 0);
+
 export default async function HomePage() {
   const session = await auth();
   if (!session) redirect("/");
 
-  const available = COURSES.filter((c) => c.status !== "coming-soon");
-  const comingSoon = COURSES.filter((c) => c.status === "coming-soon");
+  const firstName = session.user?.name?.split(" ")[0] ?? "there";
 
   return (
     <div style={GRAPH_PAPER_BG} className="min-h-screen flex flex-col">
       <LandingNav />
 
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <section
+        style={{ borderBottom: "1px solid #C8B882", background: "#F0EAD8" }}
+        className="w-full"
+      >
+        <div className="mx-auto max-w-5xl px-6 py-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+          {/* Left */}
+          <div>
+            <p
+              className="font-jetbrains text-[10px] tracking-[0.22em] uppercase mb-3"
+              style={{ color: "#C0392B" }}
+            >
+              § embriAIo — welcome back, {firstName}
+            </p>
+            <h1
+              className="font-playfair font-bold leading-tight mb-3"
+              style={{ color: "#1C1610", fontSize: "clamp(1.9rem, 4vw, 2.6rem)" }}
+            >
+              Learn AI from<br />First Principles
+            </h1>
+            <p
+              className="font-source-serif font-light text-[15px] leading-relaxed max-w-lg"
+              style={{ color: "#5C4E35" }}
+            >
+              Real code, real mathematics, video walkthroughs —<br className="hidden sm:block" />
+              no abstraction without understanding.
+            </p>
+          </div>
+
+          {/* Right: stat pills */}
+          <div className="flex flex-wrap gap-3 sm:justify-end">
+            {[
+              { value: available.length, label: "course" + (available.length !== 1 ? "s" : "") + " live" },
+              { value: comingSoon.length, label: "in development" },
+              { value: totalChapters,  label: "chapters"  },
+              { value: totalVideos,    label: "videos"    },
+              { value: totalNotebooks, label: "notebooks" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="flex flex-col items-center px-4 py-2.5 min-w-[68px]"
+                style={{ border: "1px solid #C8B882", background: "#FFFDF5" }}
+              >
+                <span
+                  className="font-playfair font-bold text-[22px] leading-none"
+                  style={{ color: "#1C1610" }}
+                >
+                  {s.value}
+                </span>
+                <span
+                  className="font-jetbrains text-[9px] tracking-[0.1em] uppercase mt-1 text-center"
+                  style={{ color: "#8B7355" }}
+                >
+                  {s.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Main content ─────────────────────────────────────── */}
       <main className="flex-1 mx-auto w-full max-w-5xl px-6 pb-24">
 
-        {/* Welcome eyebrow */}
-        <div className="pt-12 pb-8">
-          <p
-            className="font-jetbrains text-[10px] tracking-[0.2em] uppercase mb-2"
-            style={{ color: "#A08E6B" }}
-          >
-            § 1.0 — Welcome back, {session.user?.name?.split(" ")[0]}
-          </p>
-          <h1
-            className="font-playfair font-bold text-[32px] leading-tight"
-            style={{ color: "#1C1610" }}
-          >
-            Your Courses
-          </h1>
-          <p
-            className="font-source-serif font-light text-[15px] leading-relaxed mt-2 max-w-xl"
-            style={{ color: "#5C4E35" }}
-          >
-            Hands-on courses built around open-source research. Real code, real mathematics,
-            video walkthroughs — no abstraction without understanding.
-          </p>
-        </div>
-
-        {/* Divider */}
-        <div className="flex items-center gap-4 mb-6">
+        {/* Available */}
+        <div className="flex items-center gap-4 mt-8 mb-5">
           <p
             className="font-jetbrains text-[10px] tracking-[0.18em] uppercase whitespace-nowrap"
             style={{ color: "#A08E6B" }}
@@ -63,7 +107,7 @@ export default async function HomePage() {
           <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
         </div>
 
-        <div className="space-y-3 mb-12">
+        <div className="space-y-4 mb-12">
           {available.map((c) => (
             <CourseCard key={c.id} course={c} />
           ))}
@@ -72,7 +116,7 @@ export default async function HomePage() {
         {/* Coming soon */}
         {comingSoon.length > 0 && (
           <>
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-4 mb-5">
               <p
                 className="font-jetbrains text-[10px] tracking-[0.18em] uppercase whitespace-nowrap"
                 style={{ color: "#A08E6B" }}
