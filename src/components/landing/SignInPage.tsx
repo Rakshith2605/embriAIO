@@ -1,8 +1,8 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 import { NotebookDiagramSVG } from "@/components/landing/NotebookDiagramSVG";
+import { COURSES } from "@/lib/courses";
 
 const GRAPH_PAPER_BG = {
   background: "#F7F2E7",
@@ -11,10 +11,26 @@ const GRAPH_PAPER_BG = {
   backgroundSize: "28px 28px",
 } as React.CSSProperties;
 
+// Compute stats dynamically from course catalog
+const available = COURSES.filter((c) => c.status !== "coming-soon");
+const comingSoon = COURSES.filter((c) => c.status === "coming-soon");
+const totalChapters = available.reduce((s, c) => s + (c.chapters ?? 0), 0);
+const totalNotebooks = available.reduce((s, c) => s + (c.notebooks ?? 0), 0);
+const totalVideos = available.reduce((s, c) => s + (c.videos ?? 0), 0);
+
 const FEATURES = [
-  { symbol: "§", label: "7 chapters · 22 notebooks — fully pre-computed outputs" },
-  { symbol: "▶", label: "Video walkthroughs by Sebastian Raschka for every chapter" },
-  { symbol: "●", label: "Progress synced across all your devices via the cloud" },
+  {
+    symbol: "§",
+    label: `${available.length} course${available.length !== 1 ? "s" : ""} live · ${comingSoon.length} in development — library growing`,
+  },
+  {
+    symbol: "▶",
+    label: `${totalChapters} chapters · ${totalVideos} videos · ${totalNotebooks} notebooks with pre-computed outputs`,
+  },
+  {
+    symbol: "●",
+    label: "Progress synced to your account across all devices via the cloud",
+  },
 ];
 
 interface Props {
