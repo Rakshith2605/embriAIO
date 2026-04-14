@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { NotebookDiagramSVG } from "@/components/landing/NotebookDiagramSVG";
+import { MLVizRandomizer } from "@/components/landing/MLVizRandomizer";
 import { COURSES } from "@/lib/courses";
 
 const GRAPH_PAPER_BG = {
@@ -163,7 +163,7 @@ export function SignInPage({ callbackUrl }: Props) {
 
           {/* Right — diagram (desktop only) */}
           <div className="hidden lg:block">
-            <NotebookDiagramSVG />
+            <MLVizRandomizer />
           </div>
 
         </div>
