@@ -22,19 +22,14 @@ export function UserMenu() {
   }, [open]);
 
   if (status === "loading") {
-    return (
-      <div
-        className="h-7 w-14 animate-pulse"
-        style={{ background: "rgba(200,184,130,0.25)" }}
-      />
-    );
+    return null;
   }
 
   if (!session) {
     return (
       <button
         onClick={() => signIn("google")}
-        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 font-jetbrains text-[10px] tracking-[0.08em] uppercase transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 font-jetbrains text-[10px] tracking-[0.08em] uppercase transition-colors"
         style={{ border: "1px solid #C8B882", color: "#5C4E35" }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLElement).style.borderColor = "#C0392B";
@@ -46,7 +41,7 @@ export function UserMenu() {
         }}
       >
         <LogIn className="h-3.5 w-3.5" />
-        Sign In
+        <span className="hidden sm:inline">Sign In</span>
       </button>
     );
   }
