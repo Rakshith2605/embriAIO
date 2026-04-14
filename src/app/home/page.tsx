@@ -99,9 +99,6 @@ export default async function HomePage() {
           >
             embriAIo — open-source AI education
           </p>
-          <p className="font-jetbrains text-[10px]" style={{ color: "#A08E6B" }}>
-            no black boxes. no purple gradients.
-          </p>
         </div>
       </footer>
     </div>

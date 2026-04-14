@@ -175,9 +175,6 @@ export function SignInPage({ callbackUrl }: Props) {
           <p className="font-jetbrains text-[10px] uppercase tracking-[0.1em]" style={{ color: "#A08E6B" }}>
             embriAIo — open-source AI education
           </p>
-          <p className="font-jetbrains text-[10px]" style={{ color: "#A08E6B" }}>
-            no black boxes. no purple gradients.
-          </p>
         </div>
       </footer>
     </div>
