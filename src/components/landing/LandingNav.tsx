@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export function LandingNav() {
   return (
@@ -30,6 +31,7 @@ export function LandingNav() {
           >
             Github
           </a>
+          <UserMenu />
         </nav>
       </div>
     </header>
