@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { CourseEditor } from "@/components/course/CourseEditor";
 import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData } from "@/types/user-course";
 
-export const metadata = { title: "Edit Course — embriAIo" };
+export const metadata = { title: "Edit Course — emrAIo" };
 
 export default async function EditCoursePage({ params }: { params: { courseId: string } }) {
   const session = await auth();

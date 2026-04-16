@@ -7,7 +7,7 @@ export function SidebarHeader() {
       <div className="shrink-0">
         <Image
           src="/favicon.svg"
-          alt="EmbriAIO"
+          alt="EmrAIO"
           width={28}
           height={28}
           className="rounded-sm"
@@ -17,7 +17,7 @@ export function SidebarHeader() {
       <div className="min-w-0">
         <Link href="/home" className="block">
           <p className="font-playfair font-bold text-[14px] leading-tight truncate" style={{ color: '#1C1610' }}>
-            embriAIo
+            emrAIo
           </p>
           <p className="font-jetbrains text-[9px] tracking-[0.12em] uppercase truncate" style={{ color: '#8B7355' }}>
             Open-Source AI Education

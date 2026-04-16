@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase";
 import Link from "next/link";
 import { Plus, Edit3, FileEdit, Eye, BarChart3, BookOpen } from "lucide-react";
 
-export const metadata = { title: "My Courses — embriAIo" };
+export const metadata = { title: "My Courses — emrAIo" };
 
 export default async function MyCoursesPage() {
   const session = await auth();

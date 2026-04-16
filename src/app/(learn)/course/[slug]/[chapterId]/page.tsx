@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: { slug: string; cha
   }
 
   return {
-    title: `${chapter.title} — embriAIo`,
+    title: `${chapter.title} — emrAIo`,
   };
 }
 

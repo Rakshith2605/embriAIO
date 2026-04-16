@@ -4,7 +4,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, useSta
 import { useSession } from "next-auth/react";
 import { ProgressState, ProgressAction, ChapterId } from "@/types/curriculum";
 
-const STORAGE_KEY = "embriAIO_progress_v1";
+const STORAGE_KEY = "emrAIO_progress_v1";
 const SYNC_DEBOUNCE_MS = 2000;
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────

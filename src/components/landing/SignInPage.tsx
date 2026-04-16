@@ -72,7 +72,7 @@ export function SignInPage({ callbackUrl, courses }: Props) {
               className="font-jetbrains text-[10px] tracking-[0.2em] uppercase mb-4"
               style={{ color: "#C0392B" }}
             >
-              § embriaio
+              § emraio
             </p>
 
             {/* Logo */}
@@ -180,7 +180,7 @@ export function SignInPage({ callbackUrl, courses }: Props) {
       <footer className="py-5 px-6" style={{ borderTop: "1px solid #C8B882" }}>
         <div className="mx-auto max-w-5xl flex items-center justify-between">
           <p className="font-jetbrains text-[10px] uppercase tracking-[0.1em]" style={{ color: "#A08E6B" }}>
-            embriAIo — open-source AI education
+            emrAIo — open-source AI education
           </p>
         </div>
       </footer>

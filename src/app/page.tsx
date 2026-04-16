@@ -4,7 +4,7 @@ import { SignInPage } from "@/components/landing/SignInPage";
 import { fetchCourses } from "@/lib/db-curriculum";
 
 export const metadata = {
-  title: "embriAIo — Sign In",
+  title: "emrAIo — Sign In",
   description:
     "Learn AI from First Principles. Hands-on courses with real notebooks, video walkthroughs, and progress tracking.",
 };

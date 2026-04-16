@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { CourseEditor } from "@/components/course/CourseEditor";
 
-export const metadata = { title: "Create Course — embriAIo" };
+export const metadata = { title: "Create Course — emrAIo" };
 
 export default async function CreateCoursePage() {
   const session = await auth();

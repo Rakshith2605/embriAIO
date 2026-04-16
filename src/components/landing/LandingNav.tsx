@@ -9,9 +9,9 @@ export function LandingNav() {
     >
       <div className="mx-auto max-w-5xl px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center" aria-label="embriAIo home">
+        <Link href="/" className="flex items-center" aria-label="emrAIo home">
           <span className="font-playfair font-bold text-[18px] text-pg-ink">
-            embri<span className="font-bold uppercase">AI</span>o
+            emr<span className="font-bold uppercase">AI</span>o
           </span>
         </Link>
 

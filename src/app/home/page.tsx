@@ -4,7 +4,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { CourseGenreRows } from "@/components/landing/CourseGenreRows";
 
 export const metadata = {
-  title: "embriAIo — Courses",
+  title: "emrAIo — Courses",
   description: "Hands-on AI courses built around open-source research.",
 };
 
@@ -36,7 +36,7 @@ export default async function HomePage() {
               className="font-jetbrains text-[10px] tracking-[0.22em] uppercase mb-3"
               style={{ color: "#C0392B" }}
             >
-              § embriAIo — welcome back, {firstName}
+              § emrAIo — welcome back, {firstName}
             </p>
             <h1
               className="font-playfair font-bold leading-tight mb-3"
@@ -66,7 +66,7 @@ export default async function HomePage() {
             className="font-jetbrains text-[10px] uppercase tracking-[0.1em]"
             style={{ color: "#A08E6B" }}
           >
-            embriAIo — open-source AI education
+            emrAIo — open-source AI education
           </p>
         </div>
       </footer>

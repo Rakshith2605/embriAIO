@@ -5,7 +5,7 @@ import { buildSearchIndex } from "@/lib/search-index";
 import { useCurriculum } from "@/context/CurriculumContext";
 import { SearchableItem } from "@/types/curriculum";
 
-const RECENT_KEY = "embriAIO_recent_v1";
+const RECENT_KEY = "emrAIO_recent_v1";
 const MAX_RECENT = 5;
 
 export function useSearch() {

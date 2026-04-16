@@ -1,6 +1,6 @@
-# embriAIO — LLMs from Scratch: Interactive Learning Platform
+# emrAIO — LLMs from Scratch: Interactive Learning Platform
 
-An interactive web platform built around Sebastian Raschka's open-source book [**Build A Large Language Model (From Scratch)**](https://github.com/rasbt/LLMs-from-scratch) (90k+ GitHub stars). embriAIO gives students and self-learners a single, unified interface to navigate all 7 chapters + appendices, watch video walkthroughs, read Jupyter notebooks with pre-rendered outputs, track progress, and search content — without juggling GitHub, YouTube, and Colab tabs.
+An interactive web platform built around Sebastian Raschka's open-source book [**Build A Large Language Model (From Scratch)**](https://github.com/rasbt/LLMs-from-scratch) (90k+ GitHub stars). emrAIO gives students and self-learners a single, unified interface to navigate all 7 chapters + appendices, watch video walkthroughs, read Jupyter notebooks with pre-rendered outputs, track progress, and search content — without juggling GitHub, YouTube, and Colab tabs.
 
 ---
 
@@ -96,7 +96,7 @@ scripts/
                                             # into public/notebooks/ for browser-side rendering
 
 public/
-├── favicon.svg                             # embriAIO icon (extracted from full logo)
+├── favicon.svg                             # emrAIO icon (extracted from full logo)
 └── notebooks/                              # Downloaded .ipynb files served as JSON
     ├── ch02/ch02.ipynb
     ├── ch03/ch03.ipynb

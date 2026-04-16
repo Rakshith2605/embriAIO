@@ -27,7 +27,7 @@ export const COURSES: CourseDefinition[] = [
     chapters: 7,
     videos: 9,
     notebooks: 22,
-    progressLocalStorageKey: "embriAIO_progress_v1",
+    progressLocalStorageKey: "emrAIO_progress_v1",
     totalNotebooks: 22,
   },
   {

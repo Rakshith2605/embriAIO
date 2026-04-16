@@ -181,7 +181,7 @@ export function BrowseCourseCard({ course, onSubscriptionChange }: {
             <User className="w-3.5 h-3.5" style={{ color: "#8B7355" }} />
           )}
           <span className="font-source-serif text-[11px]" style={{ color: "#8B7355" }}>
-            {course.author?.name ?? "embriAIo"}
+            {course.author?.name ?? "emrAIo"}
           </span>
         </div>
 

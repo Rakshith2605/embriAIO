@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .single();
 
   return {
-    title: course ? `${course.title} — embriAIo` : "Course Not Found",
+    title: course ? `${course.title} — emrAIo` : "Course Not Found",
     description: course?.description ?? "",
   };
 }
