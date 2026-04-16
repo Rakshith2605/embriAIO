@@ -7,8 +7,12 @@ import { BonusSection } from "@/components/chapter/BonusSection";
 import Link from "next/link";
 
 export async function generateStaticParams() {
-  const curriculum = await fetchCurriculum();
-  return curriculum.chapters.map((c) => ({ chapterId: c.id }));
+  try {
+    const curriculum = await fetchCurriculum();
+    return curriculum.chapters.map((c) => ({ chapterId: c.id }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: { params: { chapterId: string } }) {

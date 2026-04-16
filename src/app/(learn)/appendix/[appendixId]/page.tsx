@@ -5,8 +5,12 @@ import { NotebookList } from "@/components/chapter/NotebookList";
 import { BonusSection } from "@/components/chapter/BonusSection";
 
 export async function generateStaticParams() {
-  const curriculum = await fetchCurriculum();
-  return curriculum.appendices.map((a) => ({ appendixId: a.id }));
+  try {
+    const curriculum = await fetchCurriculum();
+    return curriculum.appendices.map((a) => ({ appendixId: a.id }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: { params: { appendixId: string } }) {
