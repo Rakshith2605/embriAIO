@@ -7,14 +7,16 @@ import { Search, Menu, X } from "lucide-react";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { SearchDialog } from "@/components/search/SearchDialog";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { ALL_CHAPTERS } from "@/lib/curriculum";
+import { useCurriculum } from "@/context/CurriculumContext";
 
 interface Props {
   onMobileMenuToggle: () => void;
   mobileMenuOpen: boolean;
 }
 
-function buildBreadcrumb(pathname: string) {
+function useBreadcrumb(pathname: string) {
+  const curriculum = useCurriculum();
+  const ALL_CHAPTERS = [...curriculum.chapters, ...curriculum.appendices];
   const parts = pathname.split("/").filter(Boolean);
   const crumbs: { label: string; href: string }[] = [{ label: "Home", href: "/" }];
 
@@ -41,7 +43,7 @@ export function TopBar({ onMobileMenuToggle, mobileMenuOpen }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
 
-  const crumbs = buildBreadcrumb(pathname);
+  const crumbs = useBreadcrumb(pathname);
 
   useKeyboardShortcut("k", () => setSearchOpen(true));
 

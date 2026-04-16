@@ -2,7 +2,7 @@
 
 import { notFound } from "next/navigation";
 import { useEffect } from "react";
-import { CURRICULUM, getNotebookBySlug } from "@/lib/curriculum";
+import { useCurriculum } from "@/context/CurriculumContext";
 import { JupyterFrame } from "@/components/notebook/JupyterFrame";
 import { NotebookToolbar } from "@/components/notebook/NotebookToolbar";
 import { useProgress } from "@/hooks/useProgress";
@@ -13,10 +13,11 @@ interface Props {
 }
 
 export default function AppendixNotebookPage({ params }: Props) {
-  const appendix = CURRICULUM.appendices.find((a) => a.id === params.appendixId);
+  const curriculum = useCurriculum();
+  const appendix = curriculum.appendices.find((a) => a.id === params.appendixId);
   if (!appendix) notFound();
 
-  const notebook = getNotebookBySlug(params.appendixId, params.notebookSlug);
+  const notebook = appendix.mainNotebooks.find((n) => n.slug === params.notebookSlug) ?? null;
   if (!notebook) notFound();
 
   const { markInProgress } = useProgress(params.appendixId as ChapterId);

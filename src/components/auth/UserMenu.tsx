@@ -3,7 +3,8 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { LogIn, LogOut, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { LogIn, LogOut, ChevronDown, Plus, FolderOpen } from "lucide-react";
 
 export function UserMenu() {
   const { data: session, status } = useSession();
@@ -130,6 +131,28 @@ export function UserMenu() {
             >
               ● Progress synced
             </p>
+          </div>
+
+          {/* Navigation links */}
+          <div style={{ borderBottom: "1px solid #C8B882" }}>
+            <Link
+              href="/my-courses"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 font-jetbrains text-[10px] uppercase tracking-[0.08em] transition-colors hover:bg-[rgba(192,57,43,0.06)]"
+              style={{ color: "#5C4E35" }}
+            >
+              <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+              My Courses
+            </Link>
+            <Link
+              href="/create"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2 font-jetbrains text-[10px] uppercase tracking-[0.08em] transition-colors hover:bg-[rgba(192,57,43,0.06)]"
+              style={{ color: "#5C4E35" }}
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              Create Course
+            </Link>
           </div>
 
           {/* Sign out */}

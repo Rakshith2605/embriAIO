@@ -8,6 +8,9 @@ export default auth((req) => {
     pathname.startsWith("/chapter") ||
     pathname.startsWith("/appendix") ||
     pathname.startsWith("/search") ||
+    pathname.startsWith("/create") ||
+    pathname.startsWith("/course") ||
+    pathname.startsWith("/my-courses") ||
     pathname === "/home";
 
   if (isProtected && !isLoggedIn) {
@@ -18,5 +21,13 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/chapter/:path*", "/appendix/:path*", "/search", "/home"],
+  matcher: [
+    "/chapter/:path*",
+    "/appendix/:path*",
+    "/search",
+    "/home",
+    "/create/:path*",
+    "/course/:path*",
+    "/my-courses",
+  ],
 };

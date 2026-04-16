@@ -1,11 +1,10 @@
 import Fuse from "fuse.js";
-import { ALL_CHAPTERS } from "./curriculum";
-import { SearchableItem, ChapterId } from "@/types/curriculum";
+import { SearchableItem, ChapterId, Chapter } from "@/types/curriculum";
 
-function buildSearchItems(): SearchableItem[] {
+export function buildSearchItems(allChapters: Chapter[]): SearchableItem[] {
   const items: SearchableItem[] = [];
 
-  ALL_CHAPTERS.forEach((chapter) => {
+  allChapters.forEach((chapter) => {
     items.push({
       id: chapter.id,
       chapterId: chapter.id as ChapterId,
@@ -52,18 +51,20 @@ function buildSearchItems(): SearchableItem[] {
   return items;
 }
 
-export const SEARCH_ITEMS = buildSearchItems();
-
-export const SEARCH_INDEX = new Fuse(SEARCH_ITEMS, {
-  keys: [
-    { name: "notebookTitle", weight: 0.4 },
-    { name: "description", weight: 0.25 },
-    { name: "chapterTitle", weight: 0.2 },
-    { name: "tags", weight: 0.15 },
-  ],
-  threshold: 0.35,
-  includeScore: true,
-  includeMatches: true,
-  minMatchCharLength: 2,
-  useExtendedSearch: false,
-});
+export function buildSearchIndex(allChapters: Chapter[]) {
+  const searchItems = buildSearchItems(allChapters);
+  const searchIndex = new Fuse(searchItems, {
+    keys: [
+      { name: "notebookTitle", weight: 0.4 },
+      { name: "description", weight: 0.25 },
+      { name: "chapterTitle", weight: 0.2 },
+      { name: "tags", weight: 0.15 },
+    ],
+    threshold: 0.35,
+    includeScore: true,
+    includeMatches: true,
+    minMatchCharLength: 2,
+    useExtendedSearch: false,
+  });
+  return { searchItems, searchIndex };
+}

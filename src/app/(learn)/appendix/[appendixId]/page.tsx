@@ -1,15 +1,16 @@
 import { notFound } from "next/navigation";
-import { CURRICULUM } from "@/lib/curriculum";
+import { fetchCurriculum, fetchChapterById } from "@/lib/db-curriculum";
 import { ChapterHero } from "@/components/chapter/ChapterHero";
 import { NotebookList } from "@/components/chapter/NotebookList";
 import { BonusSection } from "@/components/chapter/BonusSection";
 
-export function generateStaticParams() {
-  return CURRICULUM.appendices.map((a) => ({ appendixId: a.id }));
+export async function generateStaticParams() {
+  const curriculum = await fetchCurriculum();
+  return curriculum.appendices.map((a) => ({ appendixId: a.id }));
 }
 
-export function generateMetadata({ params }: { params: { appendixId: string } }) {
-  const appendix = CURRICULUM.appendices.find((a) => a.id === params.appendixId);
+export async function generateMetadata({ params }: { params: { appendixId: string } }) {
+  const appendix = await fetchChapterById(params.appendixId);
   if (!appendix) return {};
   return {
     title: `${appendix.title}: ${appendix.subtitle} — LLMs from Scratch`,
@@ -17,8 +18,8 @@ export function generateMetadata({ params }: { params: { appendixId: string } })
   };
 }
 
-export default function AppendixPage({ params }: { params: { appendixId: string } }) {
-  const appendix = CURRICULUM.appendices.find((a) => a.id === params.appendixId);
+export default async function AppendixPage({ params }: { params: { appendixId: string } }) {
+  const appendix = await fetchChapterById(params.appendixId);
   if (!appendix) notFound();
 
   return (

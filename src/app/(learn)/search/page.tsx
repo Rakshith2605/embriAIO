@@ -1,8 +1,9 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
-import { SEARCH_INDEX } from "@/lib/search-index";
+import { useEffect, useState, useMemo, Suspense } from "react";
+import { buildSearchIndex } from "@/lib/search-index";
+import { useCurriculum } from "@/context/CurriculumContext";
 import { SearchableItem } from "@/types/curriculum";
 import { SearchResultItem } from "@/components/search/SearchResultItem";
 import { Search } from "lucide-react";
@@ -12,14 +13,19 @@ function SearchResults() {
   const router = useRouter();
   const q = searchParams.get("q") ?? "";
   const [results, setResults] = useState<SearchableItem[]>([]);
+  const curriculum = useCurriculum();
+  const { searchIndex } = useMemo(() => {
+    const allChapters = [...curriculum.chapters, ...curriculum.appendices];
+    return buildSearchIndex(allChapters);
+  }, [curriculum]);
 
   useEffect(() => {
     if (q.trim().length >= 2) {
-      setResults(SEARCH_INDEX.search(q.trim()).slice(0, 20).map((r) => r.item));
+      setResults(searchIndex.search(q.trim()).slice(0, 20).map((r) => r.item));
     } else {
       setResults([]);
     }
-  }, [q]);
+  }, [q, searchIndex]);
 
   function handleSelect(item: SearchableItem) {
     if (item.isBonus) {

@@ -18,7 +18,7 @@ export function LandingNav() {
         {/* Right nav links */}
         <nav className="flex items-center gap-6">
           <Link
-            href="/chapter/ch01"
+            href="/my-courses"
             className="font-jetbrains text-[11px] tracking-[0.12em] uppercase text-pg-muted hover:text-pg-rust transition-colors"
           >
             Courses

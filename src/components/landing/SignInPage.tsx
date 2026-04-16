@@ -1,8 +1,9 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useMemo } from "react";
 import { MLVizRandomizer } from "@/components/landing/MLVizRandomizer";
-import { COURSES } from "@/lib/courses";
+import type { CourseDefinition } from "@/lib/courses";
 
 const GRAPH_PAPER_BG = {
   background: "#F7F2E7",
@@ -11,35 +12,41 @@ const GRAPH_PAPER_BG = {
   backgroundSize: "28px 28px",
 } as React.CSSProperties;
 
-// Compute stats dynamically from course catalog
-const available = COURSES.filter((c) => c.status !== "coming-soon");
-const comingSoon = COURSES.filter((c) => c.status === "coming-soon");
-const totalChapters = available.reduce((s, c) => s + (c.chapters ?? 0), 0);
-const totalNotebooks = available.reduce((s, c) => s + (c.notebooks ?? 0), 0);
-const totalVideos = available.reduce((s, c) => s + (c.videos ?? 0), 0);
-
-const FEATURES = [
-  {
-    symbol: "§",
-    label: `${available.length} course${available.length !== 1 ? "s" : ""} live · ${comingSoon.length} in development — library growing`,
-  },
-  {
-    symbol: "▶",
-    label: `${totalChapters} chapters · ${totalVideos} videos · ${totalNotebooks} notebooks with pre-computed outputs`,
-  },
-  {
-    symbol: "●",
-    label: "Progress synced to your account across all devices via the cloud",
-  },
-];
-
 interface Props {
   callbackUrl?: string;
+  courses: CourseDefinition[];
 }
 
-export function SignInPage({ callbackUrl }: Props) {
+export function SignInPage({ callbackUrl, courses }: Props) {
   const destination = callbackUrl ?? "/home";
   const isContinuing = !!callbackUrl;
+
+  const { available, comingSoon, totalChapters, totalNotebooks, totalVideos } = useMemo(() => {
+    const avail = courses.filter((c) => c.status !== "coming-soon");
+    const soon = courses.filter((c) => c.status === "coming-soon");
+    return {
+      available: avail,
+      comingSoon: soon,
+      totalChapters: avail.reduce((s, c) => s + (c.chapters ?? 0), 0),
+      totalNotebooks: avail.reduce((s, c) => s + (c.notebooks ?? 0), 0),
+      totalVideos: avail.reduce((s, c) => s + (c.videos ?? 0), 0),
+    };
+  }, [courses]);
+
+  const FEATURES = [
+    {
+      symbol: "§",
+      label: `${available.length} course${available.length !== 1 ? "s" : ""} live · ${comingSoon.length} in development — library growing`,
+    },
+    {
+      symbol: "▶",
+      label: `${totalChapters} chapters · ${totalVideos} videos · ${totalNotebooks} notebooks with pre-computed outputs`,
+    },
+    {
+      symbol: "●",
+      label: "Progress synced to your account across all devices via the cloud",
+    },
+  ];
 
   return (
     <div style={GRAPH_PAPER_BG} className="min-h-screen flex flex-col">

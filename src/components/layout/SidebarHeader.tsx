@@ -15,12 +15,12 @@ export function SidebarHeader() {
         />
       </div>
       <div className="min-w-0">
-        <Link href="/" className="block">
+        <Link href="/home" className="block">
           <p className="font-playfair font-bold text-[14px] leading-tight truncate" style={{ color: '#1C1610' }}>
-            LLMs from Scratch
+            embriAIo
           </p>
           <p className="font-jetbrains text-[9px] tracking-[0.12em] uppercase truncate" style={{ color: '#8B7355' }}>
-            Sebastian Raschka
+            Open-Source AI Education
           </p>
         </Link>
       </div>

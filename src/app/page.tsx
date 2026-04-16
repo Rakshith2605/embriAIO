@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { SignInPage } from "@/components/landing/SignInPage";
+import { fetchCourses } from "@/lib/db-curriculum";
 
 export const metadata = {
   title: "embriAIo — Sign In",
@@ -17,5 +18,6 @@ export default async function HomePage({
   if (session) {
     redirect(searchParams.callbackUrl ?? "/home");
   }
-  return <SignInPage callbackUrl={searchParams.callbackUrl} />;
+  const courses = await fetchCourses();
+  return <SignInPage callbackUrl={searchParams.callbackUrl} courses={courses} />;
 }

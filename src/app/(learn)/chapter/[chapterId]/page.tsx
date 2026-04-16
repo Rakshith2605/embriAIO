@@ -1,17 +1,18 @@
 import { notFound } from "next/navigation";
-import { CURRICULUM } from "@/lib/curriculum";
+import { fetchCurriculum, fetchChapterById } from "@/lib/db-curriculum";
 import { ChapterHero } from "@/components/chapter/ChapterHero";
 import { VideoList } from "@/components/chapter/VideoList";
 import { NotebookList } from "@/components/chapter/NotebookList";
 import { BonusSection } from "@/components/chapter/BonusSection";
 import Link from "next/link";
 
-export function generateStaticParams() {
-  return CURRICULUM.chapters.map((c) => ({ chapterId: c.id }));
+export async function generateStaticParams() {
+  const curriculum = await fetchCurriculum();
+  return curriculum.chapters.map((c) => ({ chapterId: c.id }));
 }
 
-export function generateMetadata({ params }: { params: { chapterId: string } }) {
-  const chapter = CURRICULUM.chapters.find((c) => c.id === params.chapterId);
+export async function generateMetadata({ params }: { params: { chapterId: string } }) {
+  const chapter = await fetchChapterById(params.chapterId);
   if (!chapter) return {};
   return {
     title: `${chapter.title}: ${chapter.subtitle} — LLMs from Scratch`,
@@ -19,8 +20,8 @@ export function generateMetadata({ params }: { params: { chapterId: string } }) 
   };
 }
 
-export default function ChapterPage({ params }: { params: { chapterId: string } }) {
-  const chapter = CURRICULUM.chapters.find((c) => c.id === params.chapterId);
+export default async function ChapterPage({ params }: { params: { chapterId: string } }) {
+  const chapter = await fetchChapterById(params.chapterId);
   if (!chapter) notFound();
 
   const isConceptual = !chapter.hasCode;

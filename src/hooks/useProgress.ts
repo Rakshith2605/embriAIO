@@ -1,11 +1,13 @@
 import { useProgressContext } from "@/context/ProgressContext";
 import { ChapterId, CompletionStatus } from "@/types/curriculum";
-import { getChapterById } from "@/lib/curriculum";
+import { useCurriculum } from "@/context/CurriculumContext";
 
 export function useProgress(chapterId: ChapterId) {
   const { state, dispatch, isHydrated } = useProgressContext();
+  const curriculum = useCurriculum();
   const chapterProgress = state.chapters[chapterId];
-  const chapter = getChapterById(chapterId);
+  const allChapters = [...curriculum.chapters, ...curriculum.appendices];
+  const chapter = allChapters.find((c) => c.id === chapterId) ?? null;
   const totalNotebooks = chapter?.mainNotebooks.length ?? 0;
 
   const completedCount = Object.values(chapterProgress?.notebookProgress ?? {}).filter(

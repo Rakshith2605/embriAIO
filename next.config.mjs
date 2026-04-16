@@ -17,7 +17,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://*.framatube.org https://*.tilvids.com https://*.diode.zone https://*.videos.fosshost.org https://*.peertube.social https://*.tube.tchncs.de https://*.video.ploud.fr https://*.peertube.cpy.re",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.youtube.com https://www.youtube.com/iframe_api https://www.googletagmanager.com https://accounts.google.com",
               "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
