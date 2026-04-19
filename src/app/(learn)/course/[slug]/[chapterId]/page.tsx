@@ -36,7 +36,7 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
       *,
       courses!inner(id, slug, title, status, visibility, author_id),
       chapter_videos(id, title, embed_url, video_url, youtube_id, platform, "order"),
-      chapter_notebooks(id, title, description, colab_url, "order"),
+      chapter_notebooks(id, title, description, colab_url, github_path, filename, slug, notebook_type, "order"),
       chapter_papers(id, title, description, url, "order")
     `)
     .eq("id", params.chapterId)
@@ -240,14 +240,56 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
             <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
           </div>
           <div className="space-y-3">
-            {notebooks.map((n: { id: string; title: string; colab_url: string | null; description?: string }) => (
-              <ColabEmbed
-                key={n.id}
-                title={n.title}
-                colabUrl={n.colab_url ?? ""}
-                description={n.description}
-              />
-            ))}
+            {notebooks.map((n: { id: string; title: string; colab_url: string | null; github_path?: string | null; filename?: string | null; slug?: string | null; notebook_type?: string | null; description?: string }) => {
+              // JupyterLite / embedded notebooks (via github_path)
+              if (n.github_path && !n.colab_url) {
+                const nbSlug = n.slug ?? n.filename?.replace(/\.ipynb$/, "") ?? "notebook";
+                const chapterSlug = (chapter as unknown as { slug?: string }).slug;
+                const notebookHref = chapterSlug
+                  ? `/chapter/${chapterSlug}/notebook/${nbSlug}`
+                  : `/chapter/${chapter.id}/notebook/${nbSlug}`;
+                return (
+                  <div
+                    key={n.id}
+                    style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}
+                    className="p-4 flex items-start gap-4 group hover:shadow-sm transition-shadow"
+                  >
+                    <div
+                      className="shrink-0 flex items-center justify-center w-10 h-10"
+                      style={{ background: "#F4E8C1", border: "1px solid #C8B882" }}
+                    >
+                      <FileCode className="h-5 w-5" style={{ color: "#C0392B" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-playfair font-bold text-[15px] leading-snug mb-0.5" style={{ color: "#1C1610" }}>
+                        {n.title}
+                      </p>
+                      {n.description && (
+                        <p className="font-source-serif text-[13px] leading-relaxed mb-2 line-clamp-2" style={{ color: "#5C4E35" }}>
+                          {n.description}
+                        </p>
+                      )}
+                      <a
+                        href={notebookHref}
+                        className="inline-flex items-center gap-1.5 font-jetbrains text-[11px] tracking-wide uppercase"
+                        style={{ color: "#C0392B" }}
+                      >
+                        Open Notebook →
+                      </a>
+                    </div>
+                  </div>
+                );
+              }
+              // Colab notebooks
+              return (
+                <ColabEmbed
+                  key={n.id}
+                  title={n.title}
+                  colabUrl={n.colab_url ?? ""}
+                  description={n.description}
+                />
+              );
+            })}
           </div>
         </section>
       )}

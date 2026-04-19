@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
 import { CourseEditor } from "@/components/course/CourseEditor";
-import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData, PaperFormData } from "@/types/user-course";
+import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData, PaperFormData, NotebookSource } from "@/types/user-course";
 
 export const metadata = { title: "Edit Course — emrAIo" };
 
@@ -40,20 +40,24 @@ export default async function EditCoursePage({ params }: { params: { courseId: s
   // Map to form data
   const chapters: ChapterFormData[] = (course.course_chapters ?? [])
     .sort((a: { order: number }, b: { order: number }) => a.order - b.order)
-    .map((ch: { id: string; title: string; description: string | null; chapter_videos: Array<{ id: string; video_url: string; title: string }>; chapter_notebooks: Array<{ id: string; colab_url: string; title: string; description: string | null }>; chapter_papers: Array<{ id: string; url: string; title: string; description: string | null }> }) => ({
+    .map((ch: { id: string; title: string; description: string | null; chapter_videos: Array<{ id: string; video_url: string | null; youtube_id: string | null; title: string }>; chapter_notebooks: Array<{ id: string; colab_url: string | null; github_path: string | null; filename: string | null; title: string; description: string | null }>; chapter_papers: Array<{ id: string; url: string; title: string; description: string | null }> }) => ({
       id: ch.id,
       title: ch.title,
       description: ch.description ?? "",
-      videos: (ch.chapter_videos ?? []).map((v: { id: string; video_url: string; title: string }): VideoFormData => ({
+      videos: (ch.chapter_videos ?? []).map((v: { id: string; video_url: string | null; youtube_id: string | null; title: string }): VideoFormData => ({
         id: v.id,
-        url: v.video_url,
+        url: v.video_url || (v.youtube_id ? `https://www.youtube.com/watch?v=${v.youtube_id}` : ""),
         title: v.title,
+        youtube_id: v.youtube_id ?? undefined,
       })),
-      notebooks: (ch.chapter_notebooks ?? []).map((n: { id: string; colab_url: string; title: string; description: string | null }): NotebookFormData => ({
+      notebooks: (ch.chapter_notebooks ?? []).map((n: { id: string; colab_url: string | null; github_path: string | null; filename: string | null; title: string; description: string | null }): NotebookFormData => ({
         id: n.id,
-        colab_url: n.colab_url,
+        colab_url: n.colab_url ?? "",
         title: n.title,
         description: n.description ?? "",
+        source: (n.github_path ? "github" : "colab") as NotebookSource,
+        github_path: n.github_path ?? undefined,
+        filename: n.filename ?? undefined,
       })),
       papers: (ch.chapter_papers ?? []).map((p: { id: string; url: string; title: string; description: string | null }): PaperFormData => ({
         id: p.id,

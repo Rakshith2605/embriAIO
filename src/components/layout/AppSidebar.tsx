@@ -31,8 +31,8 @@ export function AppSidebar() {
   const curriculum = useCurriculum();
   const pathname = usePathname();
 
-  // Only show curriculum chapters on chapter/appendix/search pages
-  const showCurriculum = /^\/(chapter|appendix|search)(\/|$)/.test(pathname);
+  // Show curriculum chapters on chapter/appendix/search/course pages
+  const showCurriculum = /^\/(chapter|appendix|search|course)(\/|$)/.test(pathname);
 
   return (
     <aside

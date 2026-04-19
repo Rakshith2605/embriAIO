@@ -133,13 +133,19 @@ export interface VideoFormData {
   id?: string;
   url: string; // raw URL entered by user
   title: string;
+  youtube_id?: string; // set for platform videos that only have youtube_id
 }
+
+export type NotebookSource = "colab" | "github";
 
 export interface NotebookFormData {
   id?: string;
   colab_url: string;
   title: string;
   description: string;
+  source?: NotebookSource; // 'colab' (default) or 'github' for JupyterLite
+  github_path?: string; // set for platform notebooks
+  filename?: string;
 }
 
 export interface PaperFormData {

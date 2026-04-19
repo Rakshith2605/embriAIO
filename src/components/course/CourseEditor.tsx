@@ -679,7 +679,7 @@ export function CourseEditor({ initial }: Props) {
                   style={{ color: "#1C1610" }}
                 >
                   <FileCode className="h-4 w-4" style={{ color: "#C0392B" }} />
-                  Colab Notebooks
+                  Notebooks
                 </h3>
 
                 <ColabSharingBanner />
@@ -707,6 +707,11 @@ export function CourseEditor({ initial }: Props) {
                             style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#1C1610" }}
                             placeholder="Notebook title"
                           />
+                          {n.source === "github" && (
+                            <span className="font-jetbrains text-[8px] uppercase tracking-wider px-1.5 py-0.5 shrink-0" style={{ background: "#EDE8D5", border: "1px solid #C8B882", color: "#8B7355" }}>
+                              Embedded
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -720,20 +725,32 @@ export function CourseEditor({ initial }: Props) {
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <div className="flex items-center gap-2 ml-7">
-                          <input
-                            type="text"
-                            value={n.colab_url}
-                            onChange={(e) => {
-                              const notebooks = [...form.chapters[activeChapter].notebooks];
-                              notebooks[ni] = { ...notebooks[ni], colab_url: e.target.value, id: undefined };
-                              updateChapter(activeChapter, { notebooks });
-                            }}
-                            className="flex-1 px-2 py-1 font-jetbrains text-[11px] border outline-none focus:ring-1 focus:ring-[#C0392B]"
-                            style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#5C4E35" }}
-                            placeholder="Colab URL"
-                          />
-                        </div>
+                        {n.source === "github" ? (
+                          <div className="flex items-center gap-2 ml-7">
+                            <span
+                              className="flex-1 px-2 py-1 font-jetbrains text-[11px] truncate"
+                              style={{ background: "#FFFDF5", border: "1px solid #C8B882", color: "#8B7355" }}
+                              title={n.github_path}
+                            >
+                              {n.github_path ?? n.filename ?? "Embedded notebook"}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 ml-7">
+                            <input
+                              type="text"
+                              value={n.colab_url}
+                              onChange={(e) => {
+                                const notebooks = [...form.chapters[activeChapter].notebooks];
+                                notebooks[ni] = { ...notebooks[ni], colab_url: e.target.value, id: undefined };
+                                updateChapter(activeChapter, { notebooks });
+                              }}
+                              className="flex-1 px-2 py-1 font-jetbrains text-[11px] border outline-none focus:ring-1 focus:ring-[#C0392B]"
+                              style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#5C4E35" }}
+                              placeholder="Colab URL"
+                            />
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 ml-7">
                           <input
                             type="text"

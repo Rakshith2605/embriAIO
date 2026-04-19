@@ -1,36 +1,33 @@
-import { notFound } from "next/navigation";
-import { fetchCurriculum, fetchChapterById } from "@/lib/db-curriculum";
-import { ChapterHero } from "@/components/chapter/ChapterHero";
-import { NotebookList } from "@/components/chapter/NotebookList";
-import { BonusSection } from "@/components/chapter/BonusSection";
+import { redirect, notFound } from "next/navigation";
+import { createServiceClient } from "@/lib/supabase";
 
-export async function generateStaticParams() {
-  try {
-    const curriculum = await fetchCurriculum();
-    return curriculum.appendices.map((a) => ({ appendixId: a.id }));
-  } catch {
-    return [];
-  }
-}
-
-export async function generateMetadata({ params }: { params: { appendixId: string } }) {
-  const appendix = await fetchChapterById(params.appendixId);
-  if (!appendix) return {};
-  return {
-    title: `${appendix.title}: ${appendix.subtitle} — LLMs from Scratch`,
-    description: appendix.description,
-  };
-}
+export const dynamic = "force-dynamic";
 
 export default async function AppendixPage({ params }: { params: { appendixId: string } }) {
-  const appendix = await fetchChapterById(params.appendixId);
-  if (!appendix) notFound();
+  const supabase = createServiceClient();
+  const slug = params.appendixId;
 
-  return (
-    <div className="space-y-6">
-      <ChapterHero chapter={appendix} />
-      <NotebookList chapter={appendix} />
-      <BonusSection chapter={appendix} />
-    </div>
-  );
+  // Look up the chapter by slug and find the course slug
+  const { data: chapter } = await supabase
+    .from("course_chapters")
+    .select("id, courses!inner(slug)")
+    .eq("slug", slug)
+    .single();
+
+  if (!chapter) {
+    // Also try matching by UUID directly
+    const { data: chapterById } = await supabase
+      .from("course_chapters")
+      .select("id, courses!inner(slug)")
+      .eq("id", slug)
+      .single();
+
+    if (!chapterById) notFound();
+
+    const courseSlug = (chapterById as unknown as { courses: { slug: string } }).courses.slug;
+    redirect(`/course/${courseSlug}/${chapterById.id}`);
+  }
+
+  const courseSlug = (chapter as unknown as { courses: { slug: string } }).courses.slug;
+  redirect(`/course/${courseSlug}/${chapter.id}`);
 }
