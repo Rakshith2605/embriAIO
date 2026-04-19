@@ -6,14 +6,7 @@ import { NotebookList } from "@/components/chapter/NotebookList";
 import { BonusSection } from "@/components/chapter/BonusSection";
 import Link from "next/link";
 
-export async function generateStaticParams() {
-  try {
-    const curriculum = await fetchCurriculum();
-    return curriculum.chapters.map((c) => ({ chapterId: c.id }));
-  } catch {
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { chapterId: string } }) {
   const chapter = await fetchChapterById(params.chapterId);
