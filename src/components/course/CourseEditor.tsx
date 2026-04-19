@@ -14,9 +14,13 @@ import {
   Loader2,
   Send,
   ArrowLeft,
+  Globe,
+  Lock,
+  Shield,
 } from "lucide-react";
 import type {
   AccentColor,
+  CourseVisibility,
   CourseFormData,
   ChapterFormData,
 } from "@/types/user-course";
@@ -80,6 +84,7 @@ export function CourseEditor({ initial }: Props) {
       title: "",
       description: "",
       accent_color: "violet",
+      visibility: "public",
       chapters: [emptyChapter()],
     }
   );
@@ -141,6 +146,7 @@ export function CourseEditor({ initial }: Props) {
             title: form.title,
             description: form.description,
             accent_color: form.accent_color,
+            visibility: form.visibility,
           }),
         });
         if (!res.ok) {
@@ -158,6 +164,7 @@ export function CourseEditor({ initial }: Props) {
             title: form.title,
             description: form.description,
             accent_color: form.accent_color,
+            visibility: form.visibility,
           }),
         });
         if (!res.ok) {
@@ -434,6 +441,46 @@ export function CourseEditor({ initial }: Props) {
               value={form.accent_color}
               onChange={(c) => updateField("accent_color", c)}
             />
+          </div>
+
+          {/* Visibility */}
+          <div>
+            <label
+              className="block font-jetbrains text-[10px] uppercase tracking-wider mb-2"
+              style={{ color: "#8B7355" }}
+            >
+              Visibility
+            </label>
+            <div className="flex gap-2">
+              {([
+                { value: "public" as const, icon: Globe, label: "Public", desc: "Anyone can view and access" },
+                { value: "restricted" as const, icon: Shield, label: "Restricted", desc: "Visible to all, access by approval" },
+                { value: "private" as const, icon: Lock, label: "Private", desc: "Only you can see and access" },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateField("visibility", opt.value)}
+                  className="flex-1 flex flex-col items-center gap-1.5 p-3 transition-colors"
+                  style={{
+                    background: form.visibility === opt.value ? "#1C1610" : "#FFFDF5",
+                    color: form.visibility === opt.value ? "#F7F2E7" : "#5C4E35",
+                    border: `1px solid ${form.visibility === opt.value ? "#1C1610" : "#C8B882"}`,
+                  }}
+                >
+                  <opt.icon className="h-4 w-4" />
+                  <span className="font-jetbrains text-[10px] uppercase tracking-wider">
+                    {opt.label}
+                  </span>
+                  <span
+                    className="font-source-serif text-[10px] leading-tight text-center"
+                    style={{ color: form.visibility === opt.value ? "#C8B882" : "#8B7355" }}
+                  >
+                    {opt.desc}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -824,6 +871,46 @@ export function CourseEditor({ initial }: Props) {
             <p className="font-source-serif text-[14px] leading-relaxed mb-4" style={{ color: "#5C4E35" }}>
               {form.description || "No description"}
             </p>
+
+            {/* Visibility selector */}
+            <div className="mb-4">
+              <label
+                className="block font-jetbrains text-[10px] uppercase tracking-wider mb-2"
+                style={{ color: "#8B7355" }}
+              >
+                Publish As
+              </label>
+              <div className="flex gap-2">
+                {([
+                  { value: "public" as const, icon: Globe, label: "Public", desc: "Anyone can view and access" },
+                  { value: "restricted" as const, icon: Shield, label: "Restricted", desc: "Visible to all, access by approval" },
+                  { value: "private" as const, icon: Lock, label: "Private", desc: "Only you can see and access" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => updateField("visibility", opt.value)}
+                    className="flex-1 flex flex-col items-center gap-1.5 p-3 transition-colors"
+                    style={{
+                      background: form.visibility === opt.value ? "#1C1610" : "#FFFDF5",
+                      color: form.visibility === opt.value ? "#F7F2E7" : "#5C4E35",
+                      border: `1px solid ${form.visibility === opt.value ? "#1C1610" : "#C8B882"}`,
+                    }}
+                  >
+                    <opt.icon className="h-4 w-4" />
+                    <span className="font-jetbrains text-[10px] uppercase tracking-wider">
+                      {opt.label}
+                    </span>
+                    <span
+                      className="font-source-serif text-[10px] leading-tight text-center"
+                      style={{ color: form.visibility === opt.value ? "#C8B882" : "#8B7355" }}
+                    >
+                      {opt.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="flex gap-4">
               {[

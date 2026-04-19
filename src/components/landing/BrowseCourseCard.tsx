@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, User, Video, FileCode, BookOpen } from "lucide-react";
+import { Star, User, Video, FileCode, BookOpen, Shield } from "lucide-react";
 import type { BrowseCourse } from "@/app/api/courses/browse/route";
 
 const ACCENT_MAP: Record<string, string> = {
@@ -133,6 +133,11 @@ export function BrowseCourseCard({ course, onSubscriptionChange }: {
           {course.subscriber_count > 0 && (
             <span className="font-jetbrains text-[9px]" style={{ color: "#8B7355" }}>
               {course.subscriber_count} subscriber{course.subscriber_count !== 1 ? "s" : ""}
+            </span>
+          )}
+          {course.visibility === "restricted" && (
+            <span className="flex items-center gap-1 font-jetbrains text-[8px] tracking-widest uppercase px-1.5 py-0.5" style={{ color: "#92400E", background: "#FEF3C7", border: "1px solid #F59E0B" }}>
+              <Shield className="h-3 w-3" /> Restricted
             </span>
           )}
         </div>

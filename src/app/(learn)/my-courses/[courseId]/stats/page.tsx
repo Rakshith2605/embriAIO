@@ -12,6 +12,9 @@ import {
   Circle,
   BarChart3,
   ArrowLeft,
+  Shield,
+  Check,
+  X,
 } from "lucide-react";
 
 interface SubscriberProgress {
@@ -62,12 +65,53 @@ interface StatsData {
   growth: Record<string, number>;
 }
 
+interface AccessRequestItem {
+  id: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  requester: { name: string | null; image: string | null; email: string } | null;
+}
+
 export default function CourseStatsPage() {
   const params = useParams();
   const courseId = params.courseId as string;
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accessRequests, setAccessRequests] = useState<AccessRequestItem[]>([]);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const fetchAccessRequests = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/courses/${courseId}/access/requests`);
+      if (res.ok) {
+        const data = await res.json();
+        setAccessRequests(data);
+      }
+    } catch {
+      // ignore
+    }
+  }, [courseId]);
+
+  const handleAccessAction = async (requestId: string, action: "approve" | "deny") => {
+    setActionLoading(requestId);
+    try {
+      const res = await fetch(`/api/courses/${courseId}/access/requests`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action }),
+      });
+      if (res.ok) {
+        await fetchAccessRequests();
+      }
+    } catch {
+      // ignore
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const fetchStats = useCallback(async () => {
     try {
@@ -88,7 +132,8 @@ export default function CourseStatsPage() {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchAccessRequests();
+  }, [fetchStats, fetchAccessRequests]);
 
   if (loading) {
     return (
@@ -331,6 +376,88 @@ export default function CourseStatsPage() {
           </div>
         )}
       </section>
+
+      {/* Access Requests */}
+      {accessRequests.length > 0 && (
+        <section className="mb-8">
+          <SectionHeader
+            title="Access Requests"
+            subtitle={`${accessRequests.filter(r => r.status === "pending").length} pending`}
+          />
+          <div className="space-y-2">
+            {accessRequests.map((req) => (
+              <div
+                key={req.id}
+                className="flex items-center gap-4 p-3"
+                style={{ background: "#FFFDF5", border: "1px solid #E6DCC8" }}
+              >
+                <div className="shrink-0">
+                  {req.requester?.image ? (
+                    <Image
+                      src={req.requester.image}
+                      alt={req.requester.name ?? ""}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-jetbrains text-[11px]"
+                      style={{ background: "#F59E0B", color: "#FFFDF5" }}
+                    >
+                      {(req.requester?.name ?? req.requester?.email ?? "?")[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-playfair font-bold text-[14px] truncate" style={{ color: "#1C1610" }}>
+                    {req.requester?.name ?? req.requester?.email ?? "Unknown"}
+                  </p>
+                  <p className="font-jetbrains text-[8px] uppercase tracking-wider" style={{ color: "#8B7355" }}>
+                    Requested {new Date(req.created_at).toLocaleDateString()}
+                    {req.message && ` — "${req.message}"`}
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  {req.status === "pending" ? (
+                    <>
+                      <button
+                        onClick={() => handleAccessAction(req.id, "approve")}
+                        disabled={actionLoading === req.id}
+                        className="p-2 transition-colors hover:bg-[#E8F5E9] disabled:opacity-50"
+                        style={{ border: "1px solid #059669", color: "#059669" }}
+                        title="Approve"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleAccessAction(req.id, "deny")}
+                        disabled={actionLoading === req.id}
+                        className="p-2 transition-colors hover:bg-[#FEE2E2] disabled:opacity-50"
+                        style={{ border: "1px solid #DC2626", color: "#DC2626" }}
+                        title="Deny"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <span
+                      className="font-jetbrains text-[9px] uppercase tracking-wider px-2 py-1"
+                      style={{
+                        background: req.status === "approved" ? "#E8F5E9" : "#FEE2E2",
+                        color: req.status === "approved" ? "#059669" : "#DC2626",
+                        border: `1px solid ${req.status === "approved" ? "#059669" : "#DC2626"}`,
+                      }}
+                    >
+                      {req.status}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

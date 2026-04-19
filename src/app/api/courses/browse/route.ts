@@ -9,6 +9,7 @@ export interface BrowseCourse {
   description: string;
   accent_color: string;
   status: string;
+  visibility: string;
   course_type: string;
   category: string;
   href: string | null;
@@ -47,7 +48,7 @@ export async function GET() {
   const { data: courses, error } = await supabase
     .from("courses")
     .select(`
-      id, slug, title, description, accent_color, status, course_type, category,
+      id, slug, title, description, accent_color, status, visibility, course_type, category,
       href, chapters_count, videos_count, notebooks_count, published_at, author_id,
       profiles!courses_author_id_fkey ( name, image ),
       course_chapters ( id )
@@ -111,8 +112,15 @@ export async function GET() {
   }
 
   // For community courses, calculate chapter/video/notebook counts dynamically
+  // Filter out private courses unless the current user is the owner
+  const visibleCourses = (courses ?? []).filter((c: Record<string, unknown>) => {
+    const vis = (c.visibility as string) ?? "public";
+    if (vis === "private" && (c.author_id as string) !== userId) return false;
+    return true;
+  });
+
   const result: BrowseCourse[] = await Promise.all(
-    (courses ?? []).map(async (c: Record<string, unknown>) => {
+    visibleCourses.map(async (c: Record<string, unknown>) => {
       const chapterIds = ((c.course_chapters as { id: string }[]) ?? []).map(ch => ch.id);
       const author = c.profiles as { name: string | null; image: string | null } | null;
       const id = c.id as string;
@@ -147,6 +155,7 @@ export async function GET() {
         description: (c.description as string) ?? "",
         accent_color: (c.accent_color as string) ?? "violet",
         status: c.status as string,
+        visibility: (c.visibility as string) ?? "public",
         course_type: (c.course_type as string) ?? "community",
         category: (c.category as string) ?? "general",
         href: (c.href as string) ?? null,

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
 import Link from "next/link";
 import { Plus, Edit3, FileEdit, Eye, BarChart3, BookOpen } from "lucide-react";
+import { CourseQuickActions } from "@/components/course/CourseQuickActions";
 
 export const metadata = { title: "My Courses — emrAIo" };
 
@@ -25,7 +26,7 @@ export default async function MyCoursesPage() {
   const { data: courses } = await supabase
     .from("courses")
     .select(`
-      id, title, slug, description, status, accent_color, created_at, updated_at,
+      id, title, slug, description, status, visibility, accent_color, created_at, updated_at,
       course_chapters(id, chapter_videos(id), chapter_notebooks(id))
     `)
     .eq("author_id", profile.id)
@@ -126,16 +127,11 @@ export default async function MyCoursesPage() {
                     <h3 className="font-playfair font-bold text-[16px] truncate" style={{ color: "#1C1610" }}>
                       {course.title}
                     </h3>
-                    <span
-                      className="font-jetbrains text-[8px] uppercase tracking-wider px-2 py-0.5 shrink-0"
-                      style={{
-                        background: course.status === "published" ? "#E8F5E9" : "#FFF8E7",
-                        color: course.status === "published" ? "#2E7D32" : "#B8860B",
-                        border: `1px solid ${course.status === "published" ? "#C8E6C9" : "#E6D9A8"}`,
-                      }}
-                    >
-                      {course.status}
-                    </span>
+                    <CourseQuickActions
+                      courseId={course.id}
+                      status={course.status}
+                      visibility={course.visibility ?? "public"}
+                    />
                   </div>
 
                   {course.description && (

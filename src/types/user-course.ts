@@ -4,6 +4,8 @@ export type VideoPlatform = "youtube" | "peertube" | "other";
 
 export type CourseStatus = "draft" | "published";
 
+export type CourseVisibility = "public" | "restricted" | "private";
+
 export type AccentColor =
   | "violet"
   | "blue"
@@ -34,6 +36,7 @@ export interface UserCourse {
   description: string;
   accent_color: AccentColor;
   status: CourseStatus;
+  visibility: CourseVisibility;
   created_at: string;
   updated_at: string;
   published_at: string | null;
@@ -112,6 +115,7 @@ export interface CourseFormData {
   title: string;
   description: string;
   accent_color: AccentColor;
+  visibility: CourseVisibility;
   chapters: ChapterFormData[];
 }
 
@@ -142,4 +146,19 @@ export interface PaperFormData {
   url: string;
   title: string;
   description: string;
+}
+
+/* ───── Access request types ─────────────────────────── */
+
+export type AccessRequestStatus = "pending" | "approved" | "denied";
+
+export interface AccessRequest {
+  id: string;
+  course_id: string;
+  requester_id: string;
+  status: AccessRequestStatus;
+  message: string;
+  created_at: string;
+  reviewed_at: string | null;
+  requester?: Pick<Profile, "name" | "image" | "email">;
 }

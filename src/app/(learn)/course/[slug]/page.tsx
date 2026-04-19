@@ -3,8 +3,9 @@ import { createServiceClient } from "@/lib/supabase";
 import { auth } from "@/auth";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3 } from "lucide-react";
+import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3, Globe, Shield, Lock } from "lucide-react";
 import { SubscribeButton } from "@/components/course/SubscribeButton";
+import { AccessRequestButton } from "@/components/course/AccessRequestButton";
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const supabase = createServiceClient();
@@ -43,12 +44,50 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
 
   if (!course) notFound();
 
+  const visibility = (course.visibility as string) ?? "public";
+
   const author = course.profiles as unknown as {
     id: string;
     name: string | null;
     image: string | null;
     email: string;
   };
+
+  // Check if current user is owner
+  let isOwner = false;
+  let userId: string | null = null;
+  if (session?.user?.email) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", session.user.email)
+      .single();
+    if (profile) {
+      userId = profile.id;
+      isOwner = author?.id === profile.id;
+    }
+  }
+
+  // Private courses: only owner can see
+  if (visibility === "private" && !isOwner) notFound();
+
+  // Determine content access for restricted courses
+  let hasAccess = isOwner || visibility === "public";
+  let accessStatus: string | null = null;
+
+  if (visibility === "restricted" && !isOwner && userId) {
+    const { data: accessReq } = await supabase
+      .from("course_access_requests")
+      .select("status")
+      .eq("course_id", course.id)
+      .eq("requester_id", userId)
+      .single();
+
+    if (accessReq?.status === "approved") {
+      hasAccess = true;
+    }
+    accessStatus = accessReq?.status ?? null;
+  }
 
   const chapters = (course.course_chapters ?? []).sort(
     (a: { order: number }, b: { order: number }) => a.order - b.order
@@ -63,17 +102,6 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
     .from("course_subscriptions")
     .select("id", { count: "exact", head: true })
     .eq("course_id", course.id);
-
-  // Check if current user is owner
-  let isOwner = false;
-  if (session?.user?.email) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", session.user.email)
-      .single();
-    if (profile) isOwner = author?.id === profile.id;
-  }
 
   const accentColors: Record<string, string> = {
     violet: "#7C3AED", blue: "#2563EB", orange: "#EA580C", emerald: "#059669",
@@ -94,9 +122,21 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
             <p className="font-jetbrains text-[9px] tracking-[0.2em] uppercase mb-2" style={{ color: accent }}>
               § Community Course
             </p>
-            <h1 className="font-playfair font-bold text-[32px] leading-tight mb-3" style={{ color: "#1C1610" }}>
-              {course.title}
-            </h1>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="font-playfair font-bold text-[32px] leading-tight" style={{ color: "#1C1610" }}>
+                {course.title}
+              </h1>
+              {visibility === "restricted" && (
+                <span className="flex items-center gap-1 px-2 py-0.5 font-jetbrains text-[9px] uppercase tracking-wider" style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #F59E0B" }}>
+                  <Shield className="h-3 w-3" /> Restricted
+                </span>
+              )}
+              {visibility === "private" && (
+                <span className="flex items-center gap-1 px-2 py-0.5 font-jetbrains text-[9px] uppercase tracking-wider" style={{ background: "#FEE2E2", color: "#991B1B", border: "1px solid #EF4444" }}>
+                  <Lock className="h-3 w-3" /> Private
+                </span>
+              )}
+            </div>
             {course.description && (
               <p className="font-source-serif text-[15px] leading-relaxed max-w-2xl" style={{ color: "#5C4E35" }}>
                 {course.description}
@@ -155,7 +195,8 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
         </div>
       </div>
 
-      {/* Chapter list */}
+      {/* Chapter list — only if user has access */}
+      {hasAccess ? (
       <div className="space-y-3">
         <div className="flex items-center gap-4 mb-3">
           <p className="font-jetbrains text-[10px] tracking-[0.18em] uppercase whitespace-nowrap" style={{ color: "#A08E6B" }}>
@@ -208,6 +249,29 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
           </Link>
         ))}
       </div>
+      ) : (
+      <div className="p-8 text-center" style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}>
+        <Shield className="h-10 w-10 mx-auto mb-3" style={{ color: "#F59E0B" }} />
+        <h2 className="font-playfair font-bold text-[20px] mb-2" style={{ color: "#1C1610" }}>
+          This course is restricted
+        </h2>
+        <p className="font-source-serif text-[14px] mb-6 max-w-md mx-auto" style={{ color: "#5C4E35" }}>
+          {accessStatus === "pending"
+            ? "Your access request is pending approval from the course owner."
+            : accessStatus === "denied"
+            ? "Your access request was denied. You can request again."
+            : "Request access from the course owner to view chapters and content."}
+        </p>
+        {accessStatus !== "pending" && accessStatus !== "approved" && (
+          <AccessRequestButton courseId={course.id} />
+        )}
+        {accessStatus === "pending" && (
+          <span className="inline-flex items-center gap-2 px-4 py-2 font-jetbrains text-[11px] uppercase tracking-wider" style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #F59E0B" }}>
+            ⏳ Request Pending
+          </span>
+        )}
+      </div>
+      )}
 
       {/* Back link */}
       <div className="mt-8">

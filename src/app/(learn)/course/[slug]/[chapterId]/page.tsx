@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
+import { auth } from "@/auth";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ColabEmbed } from "@/components/course/ColabEmbed";
@@ -24,13 +25,14 @@ export async function generateMetadata({ params }: { params: { slug: string; cha
 
 export default async function ChapterViewPage({ params }: { params: { slug: string; chapterId: string } }) {
   const supabase = createServiceClient();
+  const session = await auth();
 
   // Get the chapter with its course, videos, and notebooks
   const { data: chapter } = await supabase
     .from("course_chapters")
     .select(`
       *,
-      courses!inner(id, slug, title, status),
+      courses!inner(id, slug, title, status, visibility, author_id),
       chapter_videos(id, title, embed_url, platform, "order"),
       chapter_notebooks(id, title, description, colab_url, "order"),
       chapter_papers(id, title, description, url, "order")
@@ -42,7 +44,40 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
     notFound();
   }
 
-  const courseData = (chapter as unknown as { courses: { id: string; slug: string; title: string } }).courses;
+  const courseData = (chapter as unknown as { courses: { id: string; slug: string; title: string; visibility: string; author_id: string } }).courses;
+
+  // Visibility access check
+  const visibility = courseData.visibility ?? "public";
+  let isOwner = false;
+  let userId: string | null = null;
+
+  if (session?.user?.email) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", session.user.email)
+      .single();
+    if (profile) {
+      userId = profile.id;
+      isOwner = courseData.author_id === profile.id;
+    }
+  }
+
+  if (visibility === "private" && !isOwner) notFound();
+
+  if (visibility === "restricted" && !isOwner) {
+    let hasAccess = false;
+    if (userId) {
+      const { data: accessReq } = await supabase
+        .from("course_access_requests")
+        .select("status")
+        .eq("course_id", courseData.id)
+        .eq("requester_id", userId)
+        .single();
+      if (accessReq?.status === "approved") hasAccess = true;
+    }
+    if (!hasAccess) notFound();
+  }
 
   // Get all chapters for navigation
   const { data: allChapters } = await supabase

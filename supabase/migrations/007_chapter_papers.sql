@@ -8,7 +8,7 @@ create table if not exists public.chapter_papers (
   "order"     integer not null default 0
 );
 
-create index idx_chapter_papers_chapter on public.chapter_papers(chapter_id);
+create index if not exists idx_chapter_papers_chapter on public.chapter_papers(chapter_id);
 
 alter table public.chapter_papers enable row level security;
 

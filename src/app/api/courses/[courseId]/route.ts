@@ -112,6 +112,17 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (body.title !== undefined) updates.title = body.title.trim();
   if (body.description !== undefined) updates.description = body.description.trim();
   if (body.accent_color !== undefined) updates.accent_color = body.accent_color;
+  if (body.visibility !== undefined) {
+    const valid = ["public", "restricted", "private"];
+    if (valid.includes(body.visibility)) updates.visibility = body.visibility;
+  }
+  if (body.status !== undefined) {
+    const validStatus = ["draft", "published"];
+    if (validStatus.includes(body.status)) {
+      updates.status = body.status;
+      if (body.status === "draft") updates.published_at = null;
+    }
+  }
 
   const { data, error } = await supabase
     .from("courses")

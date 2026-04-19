@@ -67,6 +67,7 @@ export default async function EditCoursePage({ params }: { params: { courseId: s
     title: course.title,
     description: course.description ?? "",
     accent_color: course.accent_color ?? "violet",
+    visibility: course.visibility ?? "public",
     chapters: chapters.length > 0 ? chapters : [{ title: "", description: "", videos: [], notebooks: [], papers: [] }],
   };
 
