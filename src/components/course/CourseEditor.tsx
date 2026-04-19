@@ -10,6 +10,7 @@ import {
   GripVertical,
   Video,
   FileCode,
+  BookOpen,
   Loader2,
   Send,
   ArrowLeft,
@@ -23,6 +24,7 @@ import { ColorPicker } from "./ColorPicker";
 import { VideoInput } from "./VideoInput";
 import { ColabInput } from "./ColabInput";
 import { ColabSharingBanner } from "./ColabSharingBanner";
+import { PaperInput } from "./PaperInput";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -40,6 +42,7 @@ const emptyChapter = (): ChapterFormData => ({
   description: "",
   videos: [],
   notebooks: [],
+  papers: [],
 });
 
 /** Snapshot the original IDs so we can diff what was deleted */
@@ -47,14 +50,16 @@ function snapshotIds(data: CourseFormData) {
   const chapterIds: string[] = [];
   const videoIds = new Map<string, string[]>(); // chapterId -> videoIds
   const notebookIds = new Map<string, string[]>();
+  const paperIds = new Map<string, string[]>();
   for (const ch of data.chapters) {
     if (ch.id) {
       chapterIds.push(ch.id);
       videoIds.set(ch.id, ch.videos.filter((v) => v.id).map((v) => v.id!));
       notebookIds.set(ch.id, ch.notebooks.filter((n) => n.id).map((n) => n.id!));
+      paperIds.set(ch.id, ch.papers.filter((p) => p.id).map((p) => p.id!));
     }
   }
-  return { chapterIds, videoIds, notebookIds };
+  return { chapterIds, videoIds, notebookIds, paperIds };
 }
 
 export function CourseEditor({ initial }: Props) {
@@ -67,7 +72,7 @@ export function CourseEditor({ initial }: Props) {
 
   // Snapshot original IDs for diff on save
   const [originalIds] = useState(() =>
-    initial ? snapshotIds(initial.data) : { chapterIds: [], videoIds: new Map(), notebookIds: new Map() }
+    initial ? snapshotIds(initial.data) : { chapterIds: [], videoIds: new Map(), notebookIds: new Map(), paperIds: new Map() }
   );
 
   const [form, setForm] = useState<CourseFormData>(
@@ -247,6 +252,37 @@ export function CourseEditor({ initial }: Props) {
             if (res.ok) {
               const n = await res.json();
               notebook.id = n.id;
+            }
+          }
+        }
+
+        // Delete removed papers
+        const currentPaperIds = chapter.papers.filter((p) => p.id).map((p) => p.id!);
+        const origPaperIds = originalIds.paperIds.get(chapterId!) ?? [];
+        const removedPaperIds = origPaperIds.filter((pid: string) => !currentPaperIds.includes(pid));
+        for (const pid of removedPaperIds) {
+          await fetch(`/api/courses/${id}/chapters/${chapterId}/papers`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paperId: pid }),
+          });
+        }
+
+        // Add new papers (those without id)
+        for (const paper of chapter.papers) {
+          if (!paper.id) {
+            const res = await fetch(`/api/courses/${id}/chapters/${chapterId}/papers`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                url: paper.url,
+                title: paper.title,
+                description: paper.description,
+              }),
+            });
+            if (res.ok) {
+              const p = await res.json();
+              paper.id = p.id;
             }
           }
         }
@@ -678,6 +714,94 @@ export function CourseEditor({ initial }: Props) {
                   }}
                 />
               </div>
+
+              {/* Papers section */}
+              <div>
+                <h3
+                  className="flex items-center gap-2 font-playfair font-bold text-[16px] mb-3"
+                  style={{ color: "#1C1610" }}
+                >
+                  <BookOpen className="h-4 w-4" style={{ color: "#C0392B" }} />
+                  Papers to Read
+                </h3>
+
+                {/* Existing papers */}
+                {form.chapters[activeChapter].papers.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {form.chapters[activeChapter].papers.map((p, pi) => (
+                      <div
+                        key={pi}
+                        className="px-3 py-2 space-y-2"
+                        style={{ background: "#F7F2E7", border: "1px solid #C8B882" }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <BookOpen className="h-4 w-4 shrink-0" style={{ color: "#8B7355" }} />
+                          <input
+                            type="text"
+                            value={p.title}
+                            onChange={(e) => {
+                              const papers = [...form.chapters[activeChapter].papers];
+                              papers[pi] = { ...papers[pi], title: e.target.value };
+                              updateChapter(activeChapter, { papers });
+                            }}
+                            className="flex-1 px-2 py-1 font-source-serif text-[13px] border outline-none focus:ring-1 focus:ring-[#C0392B]"
+                            style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#1C1610" }}
+                            placeholder="Paper title"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const papers = [...form.chapters[activeChapter].papers];
+                              papers.splice(pi, 1);
+                              updateChapter(activeChapter, { papers });
+                            }}
+                            className="p-1"
+                            style={{ color: "#C0392B" }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 ml-7">
+                          <input
+                            type="text"
+                            value={p.url}
+                            onChange={(e) => {
+                              const papers = [...form.chapters[activeChapter].papers];
+                              papers[pi] = { ...papers[pi], url: e.target.value, id: undefined };
+                              updateChapter(activeChapter, { papers });
+                            }}
+                            className="flex-1 px-2 py-1 font-jetbrains text-[11px] border outline-none focus:ring-1 focus:ring-[#C0392B]"
+                            style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#5C4E35" }}
+                            placeholder="Paper URL"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 ml-7">
+                          <input
+                            type="text"
+                            value={p.description}
+                            onChange={(e) => {
+                              const papers = [...form.chapters[activeChapter].papers];
+                              papers[pi] = { ...papers[pi], description: e.target.value };
+                              updateChapter(activeChapter, { papers });
+                            }}
+                            className="flex-1 px-2 py-1 font-source-serif text-[12px] border outline-none focus:ring-1 focus:ring-[#C0392B]"
+                            style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#5C4E35" }}
+                            placeholder="Paper description (optional)"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <PaperInput
+                  onAdd={(data) => {
+                    updateChapter(activeChapter, {
+                      papers: [...form.chapters[activeChapter].papers, data],
+                    });
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -706,6 +830,7 @@ export function CourseEditor({ initial }: Props) {
                 { label: "chapters", value: form.chapters.length },
                 { label: "videos", value: form.chapters.reduce((s, ch) => s + ch.videos.length, 0) },
                 { label: "notebooks", value: form.chapters.reduce((s, ch) => s + ch.notebooks.length, 0) },
+                { label: "papers", value: form.chapters.reduce((s, ch) => s + ch.papers.length, 0) },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <span className="font-playfair font-bold text-[20px]" style={{ color: "#1C1610" }}>
@@ -741,6 +866,7 @@ export function CourseEditor({ initial }: Props) {
                 <div className="flex gap-4 font-jetbrains text-[9px] uppercase tracking-wider" style={{ color: "#8B7355" }}>
                   <span>{ch.videos.length} video{ch.videos.length !== 1 ? "s" : ""}</span>
                   <span>{ch.notebooks.length} notebook{ch.notebooks.length !== 1 ? "s" : ""}</span>
+                  <span>{ch.papers.length} paper{ch.papers.length !== 1 ? "s" : ""}</span>
                 </div>
               </div>
             ))}

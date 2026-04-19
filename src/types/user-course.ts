@@ -67,6 +67,15 @@ export interface UserNotebook {
   order: number;
 }
 
+export interface UserPaper {
+  id: string;
+  chapter_id: string;
+  url: string;
+  title: string;
+  description: string;
+  order: number;
+}
+
 /* ───── Aggregate / view types ────────────────────────── */
 
 export interface CourseSummary {
@@ -94,6 +103,7 @@ export interface CourseDetail extends UserCourse {
 export interface ChapterDetail extends UserChapter {
   videos: UserVideo[];
   notebooks: UserNotebook[];
+  papers: UserPaper[];
 }
 
 /* ───── Form / input types ────────────────────────────── */
@@ -111,6 +121,7 @@ export interface ChapterFormData {
   description: string;
   videos: VideoFormData[];
   notebooks: NotebookFormData[];
+  papers: PaperFormData[];
 }
 
 export interface VideoFormData {
@@ -122,6 +133,13 @@ export interface VideoFormData {
 export interface NotebookFormData {
   id?: string;
   colab_url: string;
+  title: string;
+  description: string;
+}
+
+export interface PaperFormData {
+  id?: string;
+  url: string;
   title: string;
   description: string;
 }

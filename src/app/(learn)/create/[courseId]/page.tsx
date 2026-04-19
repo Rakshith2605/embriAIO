@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
 import { CourseEditor } from "@/components/course/CourseEditor";
-import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData } from "@/types/user-course";
+import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData, PaperFormData } from "@/types/user-course";
 
 export const metadata = { title: "Edit Course — emrAIo" };
 
@@ -19,7 +19,8 @@ export default async function EditCoursePage({ params }: { params: { courseId: s
       course_chapters(
         *,
         chapter_videos(*),
-        chapter_notebooks(*)
+        chapter_notebooks(*),
+        chapter_papers(*)
       )
     `)
     .eq("id", params.courseId)
@@ -39,7 +40,7 @@ export default async function EditCoursePage({ params }: { params: { courseId: s
   // Map to form data
   const chapters: ChapterFormData[] = (course.course_chapters ?? [])
     .sort((a: { order: number }, b: { order: number }) => a.order - b.order)
-    .map((ch: { id: string; title: string; description: string | null; chapter_videos: Array<{ id: string; video_url: string; title: string }>; chapter_notebooks: Array<{ id: string; colab_url: string; title: string; description: string | null }> }) => ({
+    .map((ch: { id: string; title: string; description: string | null; chapter_videos: Array<{ id: string; video_url: string; title: string }>; chapter_notebooks: Array<{ id: string; colab_url: string; title: string; description: string | null }>; chapter_papers: Array<{ id: string; url: string; title: string; description: string | null }> }) => ({
       id: ch.id,
       title: ch.title,
       description: ch.description ?? "",
@@ -54,13 +55,19 @@ export default async function EditCoursePage({ params }: { params: { courseId: s
         title: n.title,
         description: n.description ?? "",
       })),
+      papers: (ch.chapter_papers ?? []).map((p: { id: string; url: string; title: string; description: string | null }): PaperFormData => ({
+        id: p.id,
+        url: p.url,
+        title: p.title,
+        description: p.description ?? "",
+      })),
     }));
 
   const formData: CourseFormData = {
     title: course.title,
     description: course.description ?? "",
     accent_color: course.accent_color ?? "violet",
-    chapters: chapters.length > 0 ? chapters : [{ title: "", description: "", videos: [], notebooks: [] }],
+    chapters: chapters.length > 0 ? chapters : [{ title: "", description: "", videos: [], notebooks: [], papers: [] }],
   };
 
   return (

@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { auth } from "@/auth";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, FileCode, ChevronRight, Users, BarChart3 } from "lucide-react";
+import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3 } from "lucide-react";
 import { SubscribeButton } from "@/components/course/SubscribeButton";
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
@@ -33,7 +33,8 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
       course_chapters(
         id, title, description, "order",
         chapter_videos(id, title, embed_url, platform),
-        chapter_notebooks(id, title, colab_url)
+        chapter_notebooks(id, title, colab_url),
+        chapter_papers(id, title, url)
       )
     `)
     .eq("slug", params.slug)
@@ -55,6 +56,7 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
 
   const totalVideos = chapters.reduce((s: number, ch: { chapter_videos: unknown[] }) => s + (ch.chapter_videos?.length ?? 0), 0);
   const totalNotebooks = chapters.reduce((s: number, ch: { chapter_notebooks: unknown[] }) => s + (ch.chapter_notebooks?.length ?? 0), 0);
+  const totalPapers = chapters.reduce((s: number, ch: { chapter_papers: unknown[] }) => s + (ch.chapter_papers?.length ?? 0), 0);
 
   // Subscriber count
   const { count: subscriberCount } = await supabase
@@ -144,6 +146,7 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
             <span>{chapters.length} chapters</span>
             <span>{totalVideos} videos</span>
             <span>{totalNotebooks} notebooks</span>
+            {totalPapers > 0 && <span>{totalPapers} papers</span>}
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3" />
               {subscriberCount ?? 0} subscribers
@@ -161,7 +164,7 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
           <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
         </div>
 
-        {chapters.map((ch: { id: string; title: string; description?: string; order: number; chapter_videos: unknown[]; chapter_notebooks: unknown[] }, idx: number) => (
+        {chapters.map((ch: { id: string; title: string; description?: string; order: number; chapter_videos: unknown[]; chapter_notebooks: unknown[]; chapter_papers: unknown[] }, idx: number) => (
           <Link
             key={ch.id}
             href={`/course/${params.slug}/${ch.id}`}
@@ -192,6 +195,11 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
                 {(ch.chapter_notebooks as unknown[])?.length > 0 && (
                   <span className="flex items-center gap-1">
                     <FileCode className="h-3 w-3" /> {(ch.chapter_notebooks as unknown[]).length} notebook{(ch.chapter_notebooks as unknown[]).length !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {(ch.chapter_papers as unknown[])?.length > 0 && (
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" /> {(ch.chapter_papers as unknown[]).length} paper{(ch.chapter_papers as unknown[]).length !== 1 ? "s" : ""}
                   </span>
                 )}
               </div>

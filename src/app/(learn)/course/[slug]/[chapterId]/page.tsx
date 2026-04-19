@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ColabEmbed } from "@/components/course/ColabEmbed";
+import { PaperCard } from "@/components/course/PaperCard";
 
 export async function generateMetadata({ params }: { params: { slug: string; chapterId: string } }) {
   const supabase = createServiceClient();
@@ -31,7 +32,8 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
       *,
       courses!inner(id, slug, title, status),
       chapter_videos(id, title, embed_url, platform, "order"),
-      chapter_notebooks(id, title, description, colab_url, "order")
+      chapter_notebooks(id, title, description, colab_url, "order"),
+      chapter_papers(id, title, description, url, "order")
     `)
     .eq("id", params.chapterId)
     .single();
@@ -58,6 +60,9 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
     (a: { order: number }, b: { order: number }) => a.order - b.order
   );
   const notebooks = (chapter.chapter_notebooks ?? []).sort(
+    (a: { order: number }, b: { order: number }) => a.order - b.order
+  );
+  const papers = (chapter.chapter_papers ?? []).sort(
     (a: { order: number }, b: { order: number }) => a.order - b.order
   );
 
@@ -142,6 +147,28 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
                 title={n.title}
                 colabUrl={n.colab_url ?? ""}
                 description={n.description}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Papers */}
+      {papers.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <p className="font-jetbrains text-[10px] tracking-[0.18em] uppercase whitespace-nowrap" style={{ color: "#A08E6B" }}>
+              § Papers
+            </p>
+            <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
+          </div>
+          <div className="space-y-3">
+            {papers.map((p: { id: string; title: string; url: string; description?: string }) => (
+              <PaperCard
+                key={p.id}
+                title={p.title}
+                url={p.url}
+                description={p.description}
               />
             ))}
           </div>

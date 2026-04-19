@@ -43,7 +43,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
     .select(`
       *,
       chapter_videos ( * ),
-      chapter_notebooks ( * )
+      chapter_notebooks ( * ),
+      chapter_papers ( * )
     `)
     .eq("course_id", courseId)
     .order("order", { ascending: true });

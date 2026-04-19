@@ -47,7 +47,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
       course_chapters (
         *,
         chapter_videos ( * ),
-        chapter_notebooks ( * )
+        chapter_notebooks ( * ),
+        chapter_papers ( * )
       )
     `)
     .eq("id", courseId)
