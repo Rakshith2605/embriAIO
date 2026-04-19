@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Video, FileCode, BookOpen } from "lucide-react";
 import { ColabEmbed } from "@/components/course/ColabEmbed";
 import { PaperCard } from "@/components/course/PaperCard";
+import { ChapterProgressTracker } from "@/components/course/ChapterProgressTracker";
+import { ChapterCompleteButton } from "@/components/course/ChapterCompleteButton";
 
 export async function generateMetadata({ params }: { params: { slug: string; chapterId: string } }) {
   const supabase = createServiceClient();
@@ -79,6 +81,28 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
     if (!hasAccess) notFound();
   }
 
+  // Check if user is subscribed and get chapter progress
+  let isSubscribed = false;
+  let chapterStatus = "not_started";
+  if (userId) {
+    const { data: subscription } = await supabase
+      .from("course_subscriptions")
+      .select("id")
+      .eq("course_id", courseData.id)
+      .eq("subscriber_id", userId)
+      .single();
+    if (subscription) {
+      isSubscribed = true;
+      const { data: progress } = await supabase
+        .from("subscriber_progress")
+        .select("status")
+        .eq("subscription_id", subscription.id)
+        .eq("chapter_id", params.chapterId)
+        .single();
+      if (progress) chapterStatus = progress.status;
+    }
+  }
+
   // Get all chapters for navigation
   const { data: allChapters } = await supabase
     .from("course_chapters")
@@ -103,6 +127,13 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
 
   return (
     <div>
+      {/* Auto-track chapter as in_progress */}
+      <ChapterProgressTracker
+        courseId={courseData.id}
+        chapterId={params.chapterId}
+        isSubscribed={isSubscribed}
+      />
+
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4 font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: "#8B7355" }}>
         <Link href={`/course/${params.slug}`} className="hover:underline" style={{ color: "#C0392B" }}>
@@ -241,6 +272,18 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
             ))}
           </div>
         </section>
+      )}
+
+      {/* Mark Complete */}
+      {isSubscribed && (
+        <div className="flex justify-end mb-4">
+          <ChapterCompleteButton
+            courseId={courseData.id}
+            chapterId={params.chapterId}
+            isSubscribed={isSubscribed}
+            initialStatus={chapterStatus}
+          />
+        </div>
       )}
 
       {/* Chapter navigation */}

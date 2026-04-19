@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { auth } from "@/auth";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3, Globe, Shield, Lock } from "lucide-react";
+import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3, Globe, Shield, Lock, CheckCircle2, Clock } from "lucide-react";
 import { SubscribeButton } from "@/components/course/SubscribeButton";
 import { AccessRequestButton } from "@/components/course/AccessRequestButton";
 
@@ -96,6 +96,26 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
   const totalVideos = chapters.reduce((s: number, ch: { chapter_videos: unknown[] }) => s + (ch.chapter_videos?.length ?? 0), 0);
   const totalNotebooks = chapters.reduce((s: number, ch: { chapter_notebooks: unknown[] }) => s + (ch.chapter_notebooks?.length ?? 0), 0);
   const totalPapers = chapters.reduce((s: number, ch: { chapter_papers: unknown[] }) => s + (ch.chapter_papers?.length ?? 0), 0);
+
+  // Get subscriber's chapter progress
+  let chapterProgressMap: Record<string, string> = {};
+  if (userId) {
+    const { data: subscription } = await supabase
+      .from("course_subscriptions")
+      .select("id")
+      .eq("course_id", course.id)
+      .eq("subscriber_id", userId)
+      .single();
+    if (subscription) {
+      const { data: progress } = await supabase
+        .from("subscriber_progress")
+        .select("chapter_id, status")
+        .eq("subscription_id", subscription.id);
+      for (const p of progress ?? []) {
+        chapterProgressMap[p.chapter_id] = p.status;
+      }
+    }
+  }
 
   // Subscriber count
   const { count: subscriberCount } = await supabase
@@ -205,7 +225,35 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
           <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
         </div>
 
-        {chapters.map((ch: { id: string; title: string; description?: string; order: number; chapter_videos: unknown[]; chapter_notebooks: unknown[]; chapter_papers: unknown[] }, idx: number) => (
+        {/* Course progress bar */}
+        {Object.keys(chapterProgressMap).length > 0 && (() => {
+          const total = chapters.length;
+          const completed = Object.values(chapterProgressMap).filter(s => s === "completed").length;
+          const inProg = Object.values(chapterProgressMap).filter(s => s === "in_progress").length;
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+          return (
+            <div className="mb-4 p-3" style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: "#5C4E35" }}>
+                  {completed}/{total} chapters completed{inProg > 0 ? ` · ${inProg} in progress` : ""}
+                </span>
+                <span className="font-jetbrains text-[11px] font-bold" style={{ color: pct === 100 ? "#059669" : "#C0392B" }}>
+                  {pct}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5DCC8" }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, background: pct === 100 ? "#059669" : "#C0392B" }}
+                />
+              </div>
+            </div>
+          );
+        })()}
+
+        {chapters.map((ch: { id: string; title: string; description?: string; order: number; chapter_videos: unknown[]; chapter_notebooks: unknown[]; chapter_papers: unknown[] }, idx: number) => {
+          const chProgress = chapterProgressMap[ch.id];
+          return (
           <Link
             key={ch.id}
             href={`/course/${params.slug}/${ch.id}`}
@@ -245,9 +293,16 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
                 )}
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 shrink-0 mt-1 group-hover:translate-x-0.5 transition-transform" style={{ color: "#C8B882" }} />
+            {chProgress === "completed" ? (
+              <CheckCircle2 className="h-5 w-5 shrink-0 mt-1" style={{ color: "#059669" }} />
+            ) : chProgress === "in_progress" ? (
+              <Clock className="h-5 w-5 shrink-0 mt-1" style={{ color: "#CA8A04" }} />
+            ) : (
+              <ChevronRight className="h-5 w-5 shrink-0 mt-1 group-hover:translate-x-0.5 transition-transform" style={{ color: "#C8B882" }} />
+            )}
           </Link>
-        ))}
+          );
+        })}
       </div>
       ) : (
       <div className="p-8 text-center" style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}>
