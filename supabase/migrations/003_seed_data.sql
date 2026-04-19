@@ -15,7 +15,7 @@ VALUES (
 INSERT INTO public.courses (id, author_id, slug, title, description, accent_color, status, course_type, href, chapters_count, videos_count, notebooks_count, progress_storage_key, total_notebooks)
 VALUES (
   '10000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001',
+  'b74498b2-aafe-42e3-8e1a-a791ab137204',
   'llms-from-scratch',
   'LLMs from Scratch',
   'Build a GPT-style large language model end-to-end — tokenization, attention, pretraining, finetuning, and RLHF. Based on Sebastian Raschka''s open-source book.',
