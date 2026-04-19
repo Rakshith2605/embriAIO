@@ -17,7 +17,7 @@ export interface BrowseCourse {
   videos_count: number;
   notebooks_count: number;
   published_at: string | null;
-  author: { name: string | null; image: string | null };
+  author: { id: string; name: string | null; image: string | null };
   subscriber_count: number;
   avg_rating: number;
   rating_count: number;
@@ -50,7 +50,7 @@ export async function GET() {
     .select(`
       id, slug, title, description, accent_color, status, visibility, course_type, category,
       href, chapters_count, videos_count, notebooks_count, published_at, author_id,
-      profiles!courses_author_id_fkey ( name, image ),
+      profiles!courses_author_id_fkey ( id, name, image ),
       course_chapters ( id )
     `)
     .or("course_type.eq.platform,status.eq.published")
@@ -122,7 +122,7 @@ export async function GET() {
   const result: BrowseCourse[] = await Promise.all(
     visibleCourses.map(async (c: Record<string, unknown>) => {
       const chapterIds = ((c.course_chapters as { id: string }[]) ?? []).map(ch => ch.id);
-      const author = c.profiles as { name: string | null; image: string | null } | null;
+      const author = c.profiles as { id: string; name: string | null; image: string | null } | null;
       const id = c.id as string;
 
       let chapCount = (c.chapters_count as number) ?? 0;
@@ -164,6 +164,7 @@ export async function GET() {
         notebooks_count: nbCount,
         published_at: (c.published_at as string) ?? null,
         author: {
+          id: (c.author_id as string),
           name: author?.name ?? null,
           image: author?.image ?? null,
         },

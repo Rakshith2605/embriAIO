@@ -27,6 +27,7 @@ interface SubscriberProgress {
 
 interface SubscriberStat {
   subscriber: {
+    id: string;
     name: string | null;
     image: string | null;
     email: string;
@@ -326,7 +327,7 @@ export default function CourseStatsPage() {
                 className="flex items-center gap-4 p-3"
                 style={{ background: "#FFFDF5", border: "1px solid #E6DCC8" }}
               >
-                <div className="shrink-0">
+                <Link href={`/profile/${sub.subscriber.id}`} className="shrink-0">
                   {sub.subscriber.image ? (
                     <Image
                       src={sub.subscriber.image}
@@ -343,11 +344,13 @@ export default function CourseStatsPage() {
                       {(sub.subscriber.name ?? sub.subscriber.email)[0].toUpperCase()}
                     </div>
                   )}
-                </div>
+                </Link>
                 <div className="flex-1 min-w-0">
-                  <p className="font-playfair font-bold text-[14px] truncate" style={{ color: "#1C1610" }}>
-                    {sub.subscriber.name ?? sub.subscriber.email}
-                  </p>
+                  <Link href={`/profile/${sub.subscriber.id}`} className="hover:underline">
+                    <p className="font-playfair font-bold text-[14px] truncate" style={{ color: "#1C1610" }}>
+                      {sub.subscriber.name ?? sub.subscriber.email}
+                    </p>
+                  </Link>
                   <p className="font-jetbrains text-[8px] uppercase tracking-wider" style={{ color: "#8B7355" }}>
                     Joined {new Date(sub.subscribed_at).toLocaleDateString()}
                   </p>

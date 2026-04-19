@@ -4,12 +4,22 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LogIn, LogOut, ChevronDown, Plus, FolderOpen } from "lucide-react";
+import { LogIn, LogOut, ChevronDown, Plus, FolderOpen, User } from "lucide-react";
 
 export function UserMenu() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (session?.user?.email && !profileId) {
+      fetch("/api/me")
+        .then((r) => r.json())
+        .then((d) => { if (d.profileId) setProfileId(d.profileId); })
+        .catch(() => {});
+    }
+  }, [session, profileId]);
 
   useEffect(() => {
     if (!open) return;
@@ -135,6 +145,17 @@ export function UserMenu() {
 
           {/* Navigation links */}
           <div style={{ borderBottom: "1px solid #C8B882" }}>
+            {profileId && (
+              <Link
+                href={`/profile/${profileId}`}
+                onClick={() => setOpen(false)}
+                className="w-full flex items-center gap-2 px-3 py-2 font-jetbrains text-[10px] uppercase tracking-[0.08em] transition-colors hover:bg-[rgba(192,57,43,0.06)]"
+                style={{ color: "#5C4E35" }}
+              >
+                <User className="h-3.5 w-3.5 shrink-0" />
+                My Profile
+              </Link>
+            )}
             <Link
               href="/my-courses"
               onClick={() => setOpen(false)}

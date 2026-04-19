@@ -160,7 +160,7 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
 
         {/* Author + stats */}
         <div className="flex flex-wrap items-center gap-6 pt-4" style={{ borderTop: "1px solid #E6DCC8" }}>
-          <div className="flex items-center gap-2">
+          <Link href={`/profile/${author?.id}`} className="flex items-center gap-2 hover:underline">
             {author?.image ? (
               <Image
                 src={author.image}
@@ -180,7 +180,7 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
             <span className="font-source-serif text-[13px]" style={{ color: "#5C4E35" }}>
               {author?.name ?? "Unknown author"}
             </span>
-          </div>
+          </Link>
 
           <div className="flex gap-4 font-jetbrains text-[9px] uppercase tracking-wider" style={{ color: "#8B7355" }}>
             <span>{chapters.length} chapters</span>

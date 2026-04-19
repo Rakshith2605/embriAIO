@@ -90,6 +90,7 @@ export interface CourseSummary {
   status: CourseStatus;
   published_at: string | null;
   author: {
+    id?: string;
     name: string | null;
     image: string | null;
   };

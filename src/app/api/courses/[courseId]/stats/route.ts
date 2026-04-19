@@ -104,6 +104,7 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
 
     return {
       subscriber: {
+        id: subProfile?.id,
         name: subProfile?.name,
         image: subProfile?.image,
         email: subProfile?.email,

@@ -178,7 +178,11 @@ export function BrowseCourseCard({ course, onSubscriptionChange }: {
         </div>
 
         {/* Author */}
-        <div className="flex items-center gap-2 mb-2">
+        <Link
+          href={`/profile/${course.author?.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-2 mb-2 hover:underline"
+        >
           {course.author?.image ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={course.author.image} alt="" className="w-4 h-4 rounded-full" />
@@ -188,7 +192,7 @@ export function BrowseCourseCard({ course, onSubscriptionChange }: {
           <span className="font-source-serif text-[11px]" style={{ color: "#8B7355" }}>
             {course.author?.name ?? "emrAIo"}
           </span>
-        </div>
+        </Link>
 
         {/* Rating display */}
         <div className="flex items-center gap-2">
