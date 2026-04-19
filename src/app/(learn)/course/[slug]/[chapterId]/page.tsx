@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
 import { auth } from "@/auth";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Video, FileCode, BookOpen } from "lucide-react";
 import { ColabEmbed } from "@/components/course/ColabEmbed";
 import { PaperCard } from "@/components/course/PaperCard";
 
@@ -33,7 +33,7 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
     .select(`
       *,
       courses!inner(id, slug, title, status, visibility, author_id),
-      chapter_videos(id, title, embed_url, platform, "order"),
+      chapter_videos(id, title, embed_url, video_url, youtube_id, platform, "order"),
       chapter_notebooks(id, title, description, colab_url, "order"),
       chapter_papers(id, title, description, url, "order")
     `)
@@ -128,6 +128,25 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
             {chapter.description}
           </p>
         )}
+        {(videos.length > 0 || notebooks.length > 0 || papers.length > 0) && (
+          <div className="flex gap-4 font-jetbrains text-[9px] uppercase tracking-wider mt-4 pt-3" style={{ color: "#8B7355", borderTop: "1px solid #E6DCC8" }}>
+            {videos.length > 0 && (
+              <span className="flex items-center gap-1">
+                <Video className="h-3 w-3" /> {videos.length} video{videos.length !== 1 ? "s" : ""}
+              </span>
+            )}
+            {notebooks.length > 0 && (
+              <span className="flex items-center gap-1">
+                <FileCode className="h-3 w-3" /> {notebooks.length} notebook{notebooks.length !== 1 ? "s" : ""}
+              </span>
+            )}
+            {papers.length > 0 && (
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3" /> {papers.length} paper{papers.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Videos */}
@@ -139,29 +158,43 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
             </p>
             <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
           </div>
-          <div className="space-y-4">
-            {videos.map((v: { id: string; title: string; platform: string; embed_url: string | null }) => (
-              <div key={v.id}>
-                <p className="font-playfair font-bold text-[15px] mb-2" style={{ color: "#1C1610" }}>
-                  {v.title}
-                </p>
-                {v.embed_url && (
-                  <div
-                    className="relative w-full overflow-hidden"
-                    style={{ border: "1px solid #C8B882", aspectRatio: "16/9" }}
-                  >
-                    <iframe
-                      src={v.embed_url}
-                      title={v.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      sandbox="allow-same-origin allow-scripts allow-popups"
-                      className="absolute inset-0 w-full h-full"
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="space-y-6">
+            {videos.map((v: { id: string; title: string; platform: string; embed_url: string | null; video_url: string | null; youtube_id: string | null }) => {
+              const embedSrc = v.embed_url
+                ?? (v.youtube_id ? `https://www.youtube.com/embed/${v.youtube_id}` : null);
+              return (
+                <div key={v.id}>
+                  <p className="font-playfair font-bold text-[15px] mb-2" style={{ color: "#1C1610" }}>
+                    {v.title}
+                  </p>
+                  {embedSrc ? (
+                    <div
+                      className="relative w-full overflow-hidden"
+                      style={{ border: "1px solid #C8B882", aspectRatio: "16/9" }}
+                    >
+                      <iframe
+                        src={embedSrc}
+                        title={v.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        sandbox="allow-same-origin allow-scripts allow-popups"
+                        className="absolute inset-0 w-full h-full"
+                      />
+                    </div>
+                  ) : v.video_url ? (
+                    <a
+                      href={v.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 font-jetbrains text-[11px] uppercase tracking-wider transition-colors hover:bg-[#EDE8D5]"
+                      style={{ border: "1px solid #C8B882", color: "#C0392B" }}
+                    >
+                      Watch on {v.platform === "youtube" ? "YouTube" : v.platform} →
+                    </a>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
