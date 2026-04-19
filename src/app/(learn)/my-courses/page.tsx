@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase";
 import Link from "next/link";
 import { Plus, Edit3, FileEdit, Eye, BarChart3, BookOpen } from "lucide-react";
 import { CourseQuickActions } from "@/components/course/CourseQuickActions";
+import { CourseNotifications } from "@/components/course/CourseNotifications";
 
 export const metadata = { title: "My Courses — emrAIo" };
 
@@ -45,6 +46,20 @@ export default async function MyCoursesPage() {
     .order("subscribed_at", { ascending: false });
 
   const subscribedCourses = subscriptions ?? [];
+
+  // Get pending access request counts per course
+  const courseIds = myCourses.map((c) => c.id);
+  const pendingCountMap: Record<string, number> = {};
+  if (courseIds.length > 0) {
+    const { data: pendingRequests } = await supabase
+      .from("course_access_requests")
+      .select("course_id")
+      .in("course_id", courseIds)
+      .eq("status", "pending");
+    for (const r of pendingRequests ?? []) {
+      pendingCountMap[r.course_id] = (pendingCountMap[r.course_id] ?? 0) + 1;
+    }
+  }
 
   return (
     <div>
@@ -152,6 +167,10 @@ export default async function MyCoursesPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 shrink-0">
+                  <CourseNotifications
+                    courseId={course.id}
+                    pendingCount={pendingCountMap[course.id] ?? 0}
+                  />
                   {course.status === "published" && (
                     <>
                       <Link
