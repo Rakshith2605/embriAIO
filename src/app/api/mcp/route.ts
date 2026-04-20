@@ -3,7 +3,7 @@ import { handleToolCall, TOOL_DEFINITIONS } from "@/lib/mcp/tools";
 
 interface JsonRpcRequest {
   jsonrpc: "2.0";
-  id: string | number;
+  id?: string | number | null;
   method: string;
   params?: Record<string, unknown>;
 }
@@ -43,10 +43,18 @@ export async function POST(request: Request) {
 
   const { id, method, params } = body;
 
+  // Notifications have no id — acknowledge silently
+  if (id === undefined || id === null) {
+    return new Response(null, { status: 202 });
+  }
+
   if (method === "initialize") {
+    const clientVersion =
+      (params as { protocolVersion?: string })?.protocolVersion ??
+      "2024-11-05";
     return Response.json(
       rpcResult(id, {
-        protocolVersion: "2024-11-05",
+        protocolVersion: clientVersion,
         serverInfo: { name: "embriAIo", version: "1.0.0" },
         capabilities: { tools: {} },
       })
@@ -91,8 +99,12 @@ export async function POST(request: Request) {
     }
   }
 
+  if (method === "ping") {
+    return Response.json(rpcResult(id, {}));
+  }
+
   return Response.json(rpcError(id, -32601, `Method not found: ${method}`), {
-    status: 404,
+    status: 400,
   });
 }
 
