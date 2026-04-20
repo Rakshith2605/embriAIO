@@ -14,6 +14,13 @@ import {
   ChevronUp,
   Shield,
   Lock,
+  Key,
+  Copy,
+  Check,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Terminal,
 } from "lucide-react";
 
 interface ProfileData {
@@ -59,6 +66,16 @@ interface ProfileData {
   }>;
 }
 
+interface TokenData {
+  id: string;
+  name: string;
+  token_prefix: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
 type Tab = "created" | "subscribed" | "completed";
 
 export default function ProfilePage() {
@@ -70,6 +87,12 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("created");
   const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [tokens, setTokens] = useState<TokenData[]>([]);
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [tokenName, setTokenName] = useState("");
+  const [creatingToken, setCreatingToken] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [showConnect, setShowConnect] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -87,6 +110,49 @@ export default function ProfilePage() {
       setLoading(false);
     }
   }, [profileId]);
+
+  const fetchTokens = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tokens");
+      if (res.ok) {
+        const json = await res.json();
+        setTokens(json.filter((t: TokenData) => !t.revoked_at));
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const createToken = async () => {
+    setCreatingToken(true);
+    try {
+      const res = await fetch("/api/tokens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: tokenName || "Claude MCP" }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setNewToken(json.token);
+        setTokenName("");
+        fetchTokens();
+      }
+    } catch { /* silent */ }
+    setCreatingToken(false);
+  };
+
+  const revokeToken = async (id: string) => {
+    await fetch("/api/tokens", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    fetchTokens();
+  };
+
+  const copyText = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -213,6 +279,207 @@ export default function ProfilePage() {
           </button>
         ))}
       </div>
+
+      {/* ── Claude MCP Connect (owner only) ──────────── */}
+      {isOwner && (
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              setShowConnect(!showConnect);
+              if (!showConnect) fetchTokens();
+            }}
+            className="flex items-center gap-2 w-full px-4 py-3 font-jetbrains text-[10px] uppercase tracking-wider transition-colors hover:bg-[#F7F2E7]"
+            style={{ background: "#FFFDF5", border: "1px solid #C8B882", color: "#5C4E35" }}
+          >
+            <Terminal className="h-3.5 w-3.5" style={{ color: "#C0392B" }} />
+            Claude MCP Connect
+            <span className="ml-auto">
+              {showConnect ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </span>
+          </button>
+
+          {showConnect && (
+            <div
+              className="p-5 space-y-5"
+              style={{ background: "#FFFDF5", border: "1px solid #C8B882", borderTop: "none" }}
+            >
+              {/* Step 1: Server URL */}
+              <div>
+                <h3 className="font-playfair font-bold text-[14px] mb-2" style={{ color: "#1C1610" }}>
+                  1. MCP Server URL
+                </h3>
+                <div
+                  className="flex items-center gap-2 px-3 py-2"
+                  style={{ background: "#F5F0E1", border: "1px solid #D4C9A8" }}
+                >
+                  <code className="font-jetbrains text-[11px] flex-1 select-all" style={{ color: "#1C1610" }}>
+                    https://www.emraio.com/api/mcp
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyText("https://www.emraio.com/api/mcp", "url")}
+                    className="shrink-0 p-1 transition-colors hover:bg-[#EDE8D5] rounded"
+                  >
+                    {copied === "url" ? (
+                      <Check className="h-3.5 w-3.5" style={{ color: "#27AE60" }} />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" style={{ color: "#8B7355" }} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Step 2: Generate PAT */}
+              <div>
+                <h3 className="font-playfair font-bold text-[14px] mb-2" style={{ color: "#1C1610" }}>
+                  2. Personal Access Token
+                </h3>
+                <p className="font-source-serif text-[12px] mb-3" style={{ color: "#5C4E35" }}>
+                  Create a token to authenticate your MCP connection. Copy it immediately — it won&#39;t be shown again.
+                </p>
+
+                {/* New token display */}
+                {newToken && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 mb-3"
+                    style={{ background: "#E8F5E9", border: "1px solid #81C784" }}
+                  >
+                    <Key className="h-3.5 w-3.5 shrink-0" style={{ color: "#27AE60" }} />
+                    <code className="font-jetbrains text-[10px] flex-1 break-all select-all" style={{ color: "#1C1610" }}>
+                      {newToken}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => copyText(newToken, "newtoken")}
+                      className="shrink-0 p-1 transition-colors hover:bg-[#C8E6C9] rounded"
+                    >
+                      {copied === "newtoken" ? (
+                        <Check className="h-3.5 w-3.5" style={{ color: "#27AE60" }} />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" style={{ color: "#2E7D32" }} />
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Create token form */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                    placeholder="Token name (optional)"
+                    className="flex-1 px-3 py-2 font-jetbrains text-[11px] outline-none"
+                    style={{ background: "#F5F0E1", border: "1px solid #D4C9A8", color: "#1C1610" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={createToken}
+                    disabled={creatingToken}
+                    className="flex items-center gap-1.5 px-3 py-2 font-jetbrains text-[10px] uppercase tracking-wider transition-colors hover:opacity-90 disabled:opacity-50"
+                    style={{ background: "#C0392B", color: "#FFFDF5" }}
+                  >
+                    {creatingToken ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Plus className="h-3 w-3" />
+                    )}
+                    Generate
+                  </button>
+                </div>
+
+                {/* Existing tokens */}
+                {tokens.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {tokens.map((t) => (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-3 px-3 py-2"
+                        style={{ background: "#FAF8F0", border: "1px solid #E8E0CC" }}
+                      >
+                        <Key className="h-3 w-3 shrink-0" style={{ color: "#C8B882" }} />
+                        <span className="font-jetbrains text-[10px] flex-1 truncate" style={{ color: "#5C4E35" }}>
+                          {t.name} <span style={{ color: "#A08E6B" }}>({t.token_prefix}...)</span>
+                        </span>
+                        {t.last_used_at && (
+                          <span className="font-jetbrains text-[9px] shrink-0" style={{ color: "#A08E6B" }}>
+                            Used {new Date(t.last_used_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => revokeToken(t.id)}
+                          className="shrink-0 p-1 transition-colors hover:bg-[#FDE8E8] rounded"
+                          title="Revoke token"
+                        >
+                          <Trash2 className="h-3 w-3" style={{ color: "#C0392B" }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 3: Connect in Claude */}
+              <div>
+                <h3 className="font-playfair font-bold text-[14px] mb-2" style={{ color: "#1C1610" }}>
+                  3. Connect in Claude
+                </h3>
+                <ol className="space-y-2 font-source-serif text-[12px]" style={{ color: "#5C4E35" }}>
+                  <li className="flex gap-2">
+                    <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>a.</span>
+                    Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline" style={{ color: "#C0392B" }}>claude.ai <ExternalLink className="h-2.5 w-2.5 inline" /></a> → Settings → Integrations
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>b.</span>
+                    Click <strong>Add custom MCP</strong> and paste the server URL above
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>c.</span>
+                    When prompted, paste your Personal Access Token to authorize
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>d.</span>
+                    You can now ask Claude to create courses, add resources, search YouTube, and find papers
+                  </li>
+                </ol>
+              </div>
+
+              {/* Available tools */}
+              <div>
+                <h3 className="font-playfair font-bold text-[14px] mb-2" style={{ color: "#1C1610" }}>
+                  Available Tools
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { name: "create_course", desc: "Create a new learning course" },
+                    { name: "list_courses", desc: "List your courses" },
+                    { name: "get_course", desc: "Get course details" },
+                    { name: "add_resource", desc: "Add video/paper/notebook" },
+                    { name: "update_progress", desc: "Mark resource complete" },
+                    { name: "search_youtube", desc: "Find YouTube videos" },
+                    { name: "suggest_papers", desc: "Find research papers" },
+                  ].map((tool) => (
+                    <div
+                      key={tool.name}
+                      className="px-3 py-2"
+                      style={{ background: "#FAF8F0", border: "1px solid #E8E0CC" }}
+                    >
+                      <code className="font-jetbrains text-[10px] block" style={{ color: "#C0392B" }}>
+                        {tool.name}
+                      </code>
+                      <span className="font-source-serif text-[11px]" style={{ color: "#5C4E35" }}>
+                        {tool.desc}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Tab Content ───────────────────────────────── */}
 
