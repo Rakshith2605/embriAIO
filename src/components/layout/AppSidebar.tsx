@@ -4,6 +4,7 @@ import { useCurriculum } from "@/context/CurriculumContext";
 import { SidebarHeader } from "./SidebarHeader";
 import { SidebarChapterGroup } from "./SidebarChapterGroup";
 import { SidebarFooter } from "./SidebarFooter";
+import { CourseSidebar } from "./CourseSidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, FolderOpen } from "lucide-react";
@@ -31,8 +32,12 @@ export function AppSidebar() {
   const curriculum = useCurriculum();
   const pathname = usePathname();
 
-  // Show curriculum chapters on chapter/appendix/search/course pages
-  const showCurriculum = /^\/(chapter|appendix|search|course)(\/|$)/.test(pathname);
+  // Detect community course route: /course/{slug} or /course/{slug}/{chapterId}
+  const courseMatch = pathname.match(/^\/course\/([^/]+)/);
+  const courseSlug = courseMatch?.[1] ?? null;
+
+  // Show platform curriculum on chapter/appendix/search pages (not course pages)
+  const showCurriculum = /^\/(chapter|appendix|search)(\/|$)/.test(pathname);
 
   return (
     <aside
@@ -41,7 +46,9 @@ export function AppSidebar() {
     >
       <SidebarHeader />
       <nav className="flex-1 overflow-y-auto py-3 space-y-0.5">
-        {showCurriculum ? (
+        {courseSlug ? (
+          <CourseSidebar slug={courseSlug} />
+        ) : showCurriculum ? (
           <>
             <p className="px-4 pb-1 font-jetbrains text-[8.5px] tracking-[0.2em] uppercase" style={{ color: '#A08E6B' }}>
               Chapters

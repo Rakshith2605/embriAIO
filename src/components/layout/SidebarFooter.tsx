@@ -19,6 +19,7 @@ export function SidebarFooter() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const showCurriculum = /^\/(chapter|appendix|search)(\/|$)/.test(pathname);
+  const isCourseRoute = /^\/course\//.test(pathname);
 
   // Old curriculum-based progress (for chapter/appendix pages)
   const { completedNotebooks, percentComplete: curriculumPercent, isHydrated } = useOverallProgress();
@@ -29,7 +30,7 @@ export function SidebarFooter() {
   const [courseProgressLoaded, setCourseProgressLoaded] = useState(false);
 
   useEffect(() => {
-    if (showCurriculum || !session?.user?.email) return;
+    if (!isCourseRoute || !session?.user?.email) return;
     setCourseProgressLoaded(false);
     fetch("/api/courses/my-progress")
       .then((r) => (r.ok ? r.json() : null))
@@ -40,11 +41,11 @@ export function SidebarFooter() {
       .catch(() => setCourseProgressLoaded(true));
   }, [showCurriculum, session?.user?.email]);
 
-  const loaded = showCurriculum ? isHydrated : courseProgressLoaded;
-  const percent = showCurriculum ? curriculumPercent : (courseProgress?.percentComplete ?? 0);
+  const loaded = showCurriculum ? isHydrated : (isCourseRoute ? courseProgressLoaded : true);
+  const percent = showCurriculum ? curriculumPercent : (isCourseRoute ? (courseProgress?.percentComplete ?? 0) : 0);
   const completedLabel = showCurriculum
     ? (completedNotebooks > 0 ? `${completedNotebooks} notebook${completedNotebooks !== 1 ? "s" : ""} completed` : null)
-    : (courseProgress && courseProgress.completedChapters > 0
+    : (isCourseRoute && courseProgress && courseProgress.completedChapters > 0
         ? `${courseProgress.completedChapters}/${courseProgress.totalChapters} chapter${courseProgress.totalChapters !== 1 ? "s" : ""} completed`
         : null);
 
@@ -73,18 +74,20 @@ export function SidebarFooter() {
       </div>
 
       <div className="flex items-center gap-2">
-        <a
-          href="https://github.com/rasbt/LLMs-from-scratch"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 font-jetbrains text-[9px] transition-colors"
-          style={{ color: '#8B7355' }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
-        >
-          <ExternalLink className="h-3 w-3" />
-          GitHub Repo
-        </a>
+        {!isCourseRoute && (
+          <a
+            href="https://github.com/rasbt/LLMs-from-scratch"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 font-jetbrains text-[9px] transition-colors"
+            style={{ color: '#8B7355' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#C0392B'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#8B7355'; }}
+          >
+            <ExternalLink className="h-3 w-3" />
+            GitHub Repo
+          </a>
+        )}
         {showCurriculum && (
           <>
             <span style={{ color: '#C8B882' }}>·</span>
