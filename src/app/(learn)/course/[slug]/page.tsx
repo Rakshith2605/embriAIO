@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { auth } from "@/auth";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3, Globe, Shield, Lock, CheckCircle2, Clock } from "lucide-react";
+import { Video, FileCode, BookOpen, ChevronRight, Users, BarChart3, Globe, Shield, Lock, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { SubscribeButton } from "@/components/course/SubscribeButton";
 import { AccessRequestButton } from "@/components/course/AccessRequestButton";
 
@@ -180,27 +180,38 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
 
         {/* Author + stats */}
         <div className="flex flex-wrap items-center gap-6 pt-4" style={{ borderTop: "1px solid #E6DCC8" }}>
-          <Link href={`/profile/${author?.id}`} className="flex items-center gap-2 hover:underline">
-            {author?.image ? (
-              <Image
-                src={author.image}
-                alt={author.name ?? "Author"}
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
-            ) : (
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center font-jetbrains text-[10px]"
-                style={{ background: accent, color: "#FFFDF5" }}
+          <div className="flex items-center gap-2">
+            <Link href={`/profile/${author?.id}`} className="flex items-center gap-2 hover:underline">
+              {author?.image ? (
+                <Image
+                  src={author.image}
+                  alt={author.name ?? "Author"}
+                  width={24}
+                  height={24}
+                  className="rounded-full"
+                />
+              ) : (
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center font-jetbrains text-[10px]"
+                  style={{ background: accent, color: "#FFFDF5" }}
+                >
+                  {(author?.name ?? "?")[0].toUpperCase()}
+                </div>
+              )}
+              <span className="font-source-serif text-[13px]" style={{ color: "#5C4E35" }}>
+                {author?.name ?? "Unknown author"}
+              </span>
+            </Link>
+            {(course.created_via as string) === "claude" && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 font-jetbrains text-[8px] uppercase tracking-wider"
+                style={{ background: "#F0E6FF", color: "#7C3AED", border: "1px solid #D4BFFF", borderRadius: "2px" }}
               >
-                {(author?.name ?? "?")[0].toUpperCase()}
-              </div>
+                <Sparkles className="h-3 w-3" />
+                Claude
+              </span>
             )}
-            <span className="font-source-serif text-[13px]" style={{ color: "#5C4E35" }}>
-              {author?.name ?? "Unknown author"}
-            </span>
-          </Link>
+          </div>
 
           <div className="flex gap-4 font-jetbrains text-[9px] uppercase tracking-wider" style={{ color: "#8B7355" }}>
             <span>{chapters.length} chapters</span>

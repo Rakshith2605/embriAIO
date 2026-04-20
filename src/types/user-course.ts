@@ -89,6 +89,7 @@ export interface CourseSummary {
   accent_color: AccentColor;
   status: CourseStatus;
   published_at: string | null;
+  created_via?: "manual" | "claude";
   author: {
     id?: string;
     name: string | null;

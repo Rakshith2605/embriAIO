@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
 import Link from "next/link";
-import { Plus, Edit3, FileEdit, Eye, BarChart3, BookOpen } from "lucide-react";
+import { Plus, Edit3, FileEdit, Eye, BarChart3, BookOpen, Sparkles } from "lucide-react";
 import { CourseQuickActions } from "@/components/course/CourseQuickActions";
 import { CourseNotifications } from "@/components/course/CourseNotifications";
 
@@ -27,7 +27,7 @@ export default async function MyCoursesPage() {
   const { data: courses } = await supabase
     .from("courses")
     .select(`
-      id, title, slug, description, status, visibility, accent_color, created_at, updated_at,
+      id, title, slug, description, status, visibility, accent_color, created_at, updated_at, created_via,
       course_chapters(id, chapter_videos(id), chapter_notebooks(id))
     `)
     .eq("author_id", profile.id)
@@ -142,6 +142,15 @@ export default async function MyCoursesPage() {
                     <h3 className="font-playfair font-bold text-[16px] truncate" style={{ color: "#1C1610" }}>
                       {course.title}
                     </h3>
+                    {(course as Record<string, unknown>).created_via === "claude" && (
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 shrink-0 font-jetbrains text-[8px] uppercase tracking-wider"
+                        style={{ background: "#F0E6FF", color: "#7C3AED", border: "1px solid #D4BFFF" }}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        Claude
+                      </span>
+                    )}
                     <CourseQuickActions
                       courseId={course.id}
                       status={course.status}
@@ -171,6 +180,17 @@ export default async function MyCoursesPage() {
                     courseId={course.id}
                     pendingCount={pendingCountMap[course.id] ?? 0}
                   />
+                  {course.status === "draft" && (course as Record<string, unknown>).created_via === "claude" && (
+                    <Link
+                      href={`/my-courses/${course.id}/review`}
+                      className="flex items-center gap-1.5 px-3 py-2 font-jetbrains text-[10px] uppercase tracking-wider transition-colors hover:opacity-90"
+                      style={{ background: "#7C3AED", color: "#FFFDF5" }}
+                      title="Review"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Review
+                    </Link>
+                  )}
                   {course.status === "published" && (
                     <>
                       <Link

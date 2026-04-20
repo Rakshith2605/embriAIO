@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { User, Video, FileCode } from "lucide-react";
+import { User, Video, FileCode, Sparkles } from "lucide-react";
 import type { CourseSummary } from "@/types/user-course";
 
 const ACCENT_MAP: Record<string, string> = {
@@ -73,6 +73,15 @@ export function UserCourseCard({ course }: { course: CourseSummary }) {
         <span className="font-source-serif text-[11px]" style={{ color: "#8B7355" }}>
           {course.author?.name ?? "Unknown"}
         </span>
+        {course.created_via === "claude" && (
+          <span
+            className="inline-flex items-center gap-0.5 px-1 py-0.5 font-jetbrains text-[7px] uppercase tracking-wider"
+            style={{ background: "#F0E6FF", color: "#7C3AED", border: "1px solid #D4BFFF", borderRadius: "2px" }}
+          >
+            <Sparkles className="h-2.5 w-2.5" />
+            Claude
+          </span>
+        )}
       </div>
     </Link>
   );

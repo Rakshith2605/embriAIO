@@ -17,6 +17,7 @@ export interface BrowseCourse {
   videos_count: number;
   notebooks_count: number;
   published_at: string | null;
+  created_via: string;
   author: { id: string; name: string | null; image: string | null };
   subscriber_count: number;
   avg_rating: number;
@@ -49,7 +50,7 @@ export async function GET() {
     .from("courses")
     .select(`
       id, slug, title, description, accent_color, status, visibility, course_type, category,
-      href, chapters_count, videos_count, notebooks_count, published_at, author_id,
+      href, chapters_count, videos_count, notebooks_count, published_at, created_via, author_id,
       profiles!courses_author_id_fkey ( id, name, image ),
       course_chapters ( id )
     `)
@@ -163,6 +164,7 @@ export async function GET() {
         videos_count: vidCount,
         notebooks_count: nbCount,
         published_at: (c.published_at as string) ?? null,
+        created_via: (c.created_via as string) ?? "manual",
         author: {
           id: (c.author_id as string),
           name: author?.name ?? null,

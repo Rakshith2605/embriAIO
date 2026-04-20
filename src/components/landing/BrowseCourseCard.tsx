@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, User, Video, FileCode, BookOpen, Shield } from "lucide-react";
+import { Star, User, Video, FileCode, BookOpen, Shield, Sparkles } from "lucide-react";
 import type { BrowseCourse } from "@/app/api/courses/browse/route";
 
 const ACCENT_MAP: Record<string, string> = {
@@ -178,21 +178,32 @@ export function BrowseCourseCard({ course, onSubscriptionChange }: {
         </div>
 
         {/* Author */}
-        <Link
-          href={`/profile/${course.author?.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 mb-2 hover:underline"
-        >
-          {course.author?.image ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={course.author.image} alt="" className="w-4 h-4 rounded-full" />
-          ) : (
-            <User className="w-3.5 h-3.5" style={{ color: "#8B7355" }} />
+        <div className="flex items-center gap-2 mb-2">
+          <Link
+            href={`/profile/${course.author?.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 hover:underline"
+          >
+            {course.author?.image ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={course.author.image} alt="" className="w-4 h-4 rounded-full" />
+            ) : (
+              <User className="w-3.5 h-3.5" style={{ color: "#8B7355" }} />
+            )}
+            <span className="font-source-serif text-[11px]" style={{ color: "#8B7355" }}>
+              {course.author?.name ?? "emrAIo"}
+            </span>
+          </Link>
+          {course.created_via === "claude" && (
+            <span
+              className="inline-flex items-center gap-0.5 px-1 py-0.5 font-jetbrains text-[7px] uppercase tracking-wider"
+              style={{ background: "#F0E6FF", color: "#7C3AED", border: "1px solid #D4BFFF", borderRadius: "2px" }}
+            >
+              <Sparkles className="h-2.5 w-2.5" />
+              Claude
+            </span>
           )}
-          <span className="font-source-serif text-[11px]" style={{ color: "#8B7355" }}>
-            {course.author?.name ?? "emrAIo"}
-          </span>
-        </Link>
+        </div>
 
         {/* Rating display */}
         <div className="flex items-center gap-2">

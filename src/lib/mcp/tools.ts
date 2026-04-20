@@ -10,7 +10,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: "create_course",
     description:
-      "Create a new course on the emrAIo platform with chapters. The course starts as a draft.",
+      "Create a new course on the emrAIo platform with chapters. The course is created as a draft for the user to review and publish.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -202,6 +202,7 @@ async function createCourse(
       description: description.trim(),
       accent_color: accentColor,
       status: "draft",
+      created_via: "claude",
     })
     .select()
     .single();
@@ -235,10 +236,13 @@ async function createCourse(
       id: course.id,
       slug: course.slug,
       title: course.title,
-      status: course.status,
-      url: `https://www.emraio.com/course/${course.slug}`,
+      status: "draft (pending review)",
+      created_via: "claude",
+      review_url: `https://www.emraio.com/my-courses/${course.id}/review`,
     },
     chapters,
+    message:
+      "Course created as draft. The user should review it at the review URL before publishing.",
   });
 }
 
