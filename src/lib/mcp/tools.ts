@@ -38,6 +38,11 @@ export const TOOL_DEFINITIONS = [
           description: "Chapter titles to create",
           items: { type: "string" },
         },
+        num_modules: {
+          type: "number",
+          description:
+            "Number of chapters to auto-generate (used when chapters array is not provided)",
+        },
       },
       required: ["title"],
     },
@@ -104,6 +109,23 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: "create_chapter",
+    description:
+      "Add a chapter to an existing course. Use this to create chapters one by one with proper titles.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        course_id: { type: "string", description: "Course UUID" },
+        title: { type: "string", description: "Chapter title" },
+        description: {
+          type: "string",
+          description: "Chapter description (optional)",
+        },
+      },
+      required: ["course_id", "title"],
+    },
+  },
+  {
     name: "search_youtube",
     description: "Search YouTube for educational videos",
     inputSchema: {
@@ -147,6 +169,8 @@ export async function handleToolCall(
       return listCourses(args, userId);
     case "get_course":
       return getCourse(args, userId);
+    case "create_chapter":
+      return createChapter(args, userId);
     case "add_resource":
       return addResource(args, userId);
     case "publish_course":
@@ -180,7 +204,13 @@ async function createCourse(
 
   const description = (args.description as string) ?? "";
   const accentColor = (args.accent_color as string) ?? "violet";
-  const chapterTitles = (args.chapters as string[]) ?? [];
+  let chapterTitles = (args.chapters as string[]) ?? [];
+
+  // Accept num_modules to auto-generate chapter placeholders
+  if (chapterTitles.length === 0 && args.num_modules) {
+    const n = Math.min(Math.max(Number(args.num_modules) || 0, 1), 20);
+    chapterTitles = Array.from({ length: n }, (_, i) => `Chapter ${i + 1}`);
+  }
 
   const supabase = createServiceClient();
 
@@ -246,6 +276,52 @@ async function createCourse(
     message:
       "Course created as draft. The user should review it at the review URL before publishing.",
   });
+}
+
+// ──── create_chapter ───────────────────────────────────────
+
+async function createChapter(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ToolResult> {
+  const courseId = args.course_id as string;
+  if (!courseId) return err("course_id is required");
+  const title = args.title as string;
+  if (!title) return err("title is required");
+  const description = ((args.description as string) ?? "").trim();
+
+  const supabase = createServiceClient();
+
+  // Verify ownership
+  const { data: course } = await supabase
+    .from("courses")
+    .select("id")
+    .eq("id", courseId)
+    .eq("author_id", userId)
+    .single();
+
+  if (!course) return err("Course not found or access denied");
+
+  // Get current chapter count for ordering
+  const { count } = await supabase
+    .from("course_chapters")
+    .select("id", { count: "exact", head: true })
+    .eq("course_id", courseId);
+
+  const { data: chapter, error } = await supabase
+    .from("course_chapters")
+    .insert({
+      course_id: courseId,
+      title: title.trim(),
+      description,
+      order: count ?? 0,
+      slug: slugify(title),
+    })
+    .select()
+    .single();
+
+  if (error) return err(`Failed to create chapter: ${error.message}`);
+  return ok(chapter);
 }
 
 // ──── list_courses ─────────────────────────────────────────
