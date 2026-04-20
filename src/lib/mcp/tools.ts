@@ -15,6 +15,7 @@ export const TOOL_DEFINITIONS = [
       type: "object" as const,
       properties: {
         title: { type: "string", description: "Course title" },
+        topic: { type: "string", description: "Course topic (alias for title)" },
         description: { type: "string", description: "Course description" },
         accent_color: {
           type: "string",
@@ -173,7 +174,8 @@ async function createCourse(
   args: Record<string, unknown>,
   userId: string
 ): Promise<ToolResult> {
-  const title = args.title as string;
+  // Accept "topic" as alias for "title" (backward compat with older schemas)
+  const title = (args.title as string) || (args.topic as string);
   if (!title) return err("title is required");
 
   const description = (args.description as string) ?? "";
