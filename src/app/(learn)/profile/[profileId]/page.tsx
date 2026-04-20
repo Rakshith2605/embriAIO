@@ -304,24 +304,33 @@ export default function ProfilePage() {
               className="p-5 space-y-5"
               style={{ background: "#FFFDF5", border: "1px solid #C8B882", borderTop: "none" }}
             >
-              {/* Step 1: Server URL */}
+              {/* Step 1: JSON Config */}
               <div>
                 <h3 className="font-playfair font-bold text-[14px] mb-2" style={{ color: "#1C1610" }}>
-                  1. MCP Server URL
+                  1. MCP Server Config
                 </h3>
+                <p className="font-source-serif text-[12px] mb-2" style={{ color: "#5C4E35" }}>
+                  Copy this JSON to add emrAIo as a custom MCP integration in Claude.
+                </p>
                 <div
-                  className="flex items-center gap-2 px-3 py-2"
-                  style={{ background: "#F5F0E1", border: "1px solid #D4C9A8" }}
+                  className="relative px-4 py-3"
+                  style={{ background: "#1C1610", border: "1px solid #3D352A" }}
                 >
-                  <code className="font-jetbrains text-[11px] flex-1 select-all" style={{ color: "#1C1610" }}>
-                    https://www.emraio.com/api/mcp
-                  </code>
+                  <pre className="font-jetbrains text-[11px] leading-relaxed select-all overflow-x-auto" style={{ color: "#E8E0CC" }}>
+{`{
+  "mcpServers": {
+    "emraio": {
+      "url": "https://www.emraio.com/api/mcp"
+    }
+  }
+}`}
+                  </pre>
                   <button
                     type="button"
-                    onClick={() => copyText("https://www.emraio.com/api/mcp", "url")}
-                    className="shrink-0 p-1 transition-colors hover:bg-[#EDE8D5] rounded"
+                    onClick={() => copyText(JSON.stringify({ mcpServers: { emraio: { url: "https://www.emraio.com/api/mcp" } } }, null, 2), "json")}
+                    className="absolute top-2 right-2 p-1.5 transition-colors hover:bg-[#3D352A] rounded"
                   >
-                    {copied === "url" ? (
+                    {copied === "json" ? (
                       <Check className="h-3.5 w-3.5" style={{ color: "#27AE60" }} />
                     ) : (
                       <Copy className="h-3.5 w-3.5" style={{ color: "#8B7355" }} />
@@ -429,15 +438,15 @@ export default function ProfilePage() {
                 <ol className="space-y-2 font-source-serif text-[12px]" style={{ color: "#5C4E35" }}>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>a.</span>
-                    Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline" style={{ color: "#C0392B" }}>claude.ai <ExternalLink className="h-2.5 w-2.5 inline" /></a> → Settings → Integrations
+                    Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline" style={{ color: "#C0392B" }}>claude.ai <ExternalLink className="h-2.5 w-2.5 inline" /></a> → Settings → Integrations → <strong>Add custom MCP</strong>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>b.</span>
-                    Click <strong>Add custom MCP</strong> and paste the server URL above
+                    Paste the JSON config above into the configuration field
                   </li>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>c.</span>
-                    When prompted, paste your Personal Access Token to authorize
+                    When the OAuth prompt appears, paste your Personal Access Token to authorize
                   </li>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>d.</span>
