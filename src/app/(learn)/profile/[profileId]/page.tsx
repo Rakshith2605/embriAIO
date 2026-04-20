@@ -310,7 +310,7 @@ export default function ProfilePage() {
                   1. MCP Server Config
                 </h3>
                 <p className="font-source-serif text-[12px] mb-2" style={{ color: "#5C4E35" }}>
-                  Copy this JSON to add emrAIo as a custom MCP integration in Claude.
+                  Copy this JSON and replace <code className="font-jetbrains text-[10px] px-1 py-0.5" style={{ background: "#F5F0E1", color: "#C0392B" }}>pat_your_token_here</code> with your token from step 2.
                 </p>
                 <div
                   className="relative px-4 py-3"
@@ -320,14 +320,24 @@ export default function ProfilePage() {
 {`{
   "mcpServers": {
     "emraio": {
-      "url": "https://www.emraio.com/api/mcp"
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://www.emraio.com/api/mcp",
+        "--header",
+        "Authorization: Bearer \${EMRAIO_PAT}"
+      ],
+      "env": {
+        "EMRAIO_PAT": "${newToken || "pat_your_token_here"}"
+      }
     }
   }
 }`}
                   </pre>
                   <button
                     type="button"
-                    onClick={() => copyText(JSON.stringify({ mcpServers: { emraio: { url: "https://www.emraio.com/api/mcp" } } }, null, 2), "json")}
+                    onClick={() => copyText(JSON.stringify({ mcpServers: { emraio: { command: "npx", args: ["-y", "mcp-remote", "https://www.emraio.com/api/mcp", "--header", "Authorization: Bearer ${EMRAIO_PAT}"], env: { EMRAIO_PAT: newToken || "pat_your_token_here" } } } }, null, 2), "json")}
                     className="absolute top-2 right-2 p-1.5 transition-colors hover:bg-[#3D352A] rounded"
                   >
                     {copied === "json" ? (
@@ -438,15 +448,15 @@ export default function ProfilePage() {
                 <ol className="space-y-2 font-source-serif text-[12px]" style={{ color: "#5C4E35" }}>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>a.</span>
-                    Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline" style={{ color: "#C0392B" }}>claude.ai <ExternalLink className="h-2.5 w-2.5 inline" /></a> → Settings → Integrations → <strong>Add custom MCP</strong>
+                    Generate a PAT above, then copy the JSON config (your token is auto-filled)
                   </li>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>b.</span>
-                    Paste the JSON config above into the configuration field
+                    Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline" style={{ color: "#C0392B" }}>claude.ai <ExternalLink className="h-2.5 w-2.5 inline" /></a> → Settings → Integrations → <strong>Add custom MCP</strong>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>c.</span>
-                    When the OAuth prompt appears, paste your Personal Access Token to authorize
+                    Paste the JSON config and save
                   </li>
                   <li className="flex gap-2">
                     <span className="font-jetbrains text-[10px] shrink-0 mt-0.5" style={{ color: "#C0392B" }}>d.</span>
