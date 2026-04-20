@@ -81,6 +81,10 @@ export const TOOL_DEFINITIONS = [
       type: "object" as const,
       properties: {
         chapter_id: { type: "string", description: "Chapter UUID" },
+        module_id: {
+          type: "string",
+          description: "Chapter UUID (alias for chapter_id)",
+        },
         type: {
           type: "string",
           enum: ["video", "paper", "notebook"],
@@ -93,7 +97,7 @@ export const TOOL_DEFINITIONS = [
           description: "Resource description (for papers and notebooks)",
         },
       },
-      required: ["chapter_id", "type", "title", "url"],
+      required: ["type", "title", "url"],
     },
   },
   {
@@ -206,9 +210,15 @@ async function createCourse(
   const accentColor = (args.accent_color as string) ?? "violet";
   let chapterTitles = (args.chapters as string[]) ?? [];
 
-  // Accept num_modules to auto-generate chapter placeholders
-  if (chapterTitles.length === 0 && args.num_modules) {
-    const n = Math.min(Math.max(Number(args.num_modules) || 0, 1), 20);
+  // Accept num_modules or num_chapters to auto-generate chapter placeholders
+  if (
+    chapterTitles.length === 0 &&
+    (args.num_modules || args.num_chapters)
+  ) {
+    const n = Math.min(
+      Math.max(Number(args.num_modules || args.num_chapters) || 0, 1),
+      20
+    );
     chapterTitles = Array.from({ length: n }, (_, i) => `Chapter ${i + 1}`);
   }
 
@@ -284,7 +294,9 @@ async function createChapter(
   args: Record<string, unknown>,
   userId: string
 ): Promise<ToolResult> {
-  const courseId = args.course_id as string;
+  // Accept module_id as alias for course_id (old schema compat)
+  const courseId =
+    (args.course_id as string) || (args.module_id as string);
   if (!courseId) return err("course_id is required");
   const title = args.title as string;
   if (!title) return err("title is required");
@@ -441,14 +453,21 @@ async function addResource(
   args: Record<string, unknown>,
   userId: string
 ): Promise<ToolResult> {
-  const chapterId = args.chapter_id as string;
-  if (!chapterId) return err("chapter_id is required");
+  // Accept module_id as alias for chapter_id (old schema compat)
+  const chapterId =
+    (args.chapter_id as string) || (args.module_id as string);
+  if (!chapterId) return err("chapter_id (or module_id) is required");
 
-  const type = args.type as string;
+  // Accept resource_type as alias for type
+  const type = (args.type as string) || (args.resource_type as string);
   if (!type) return err("type is required (video, paper, or notebook)");
 
-  const title = args.title as string;
-  const url = args.url as string;
+  // Accept name/link/video_url as aliases
+  const title = (args.title as string) || (args.name as string);
+  const url =
+    (args.url as string) ||
+    (args.link as string) ||
+    (args.video_url as string);
   if (!title || !url) return err("title and url are required");
 
   const supabase = createServiceClient();
