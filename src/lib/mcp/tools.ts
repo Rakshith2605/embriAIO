@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase";
+import { slugify } from "@/lib/utils";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -8,35 +9,47 @@ type ToolResult = {
 export const TOOL_DEFINITIONS = [
   {
     name: "create_course",
-    description: "Create a new learning course with auto-generated modules",
+    description:
+      "Create a new course on the emrAIo platform with chapters. The course starts as a draft.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        topic: { type: "string", description: "Course topic" },
-        difficulty: {
-          type: "string",
-          enum: ["beginner", "intermediate", "advanced"],
-          description: "Difficulty level (default: beginner)",
-        },
-        num_modules: {
-          type: "number",
-          description: "Number of modules to create (default: 5)",
-        },
+        title: { type: "string", description: "Course title" },
         description: { type: "string", description: "Course description" },
+        accent_color: {
+          type: "string",
+          enum: [
+            "violet",
+            "blue",
+            "orange",
+            "emerald",
+            "cyan",
+            "pink",
+            "yellow",
+            "red",
+            "indigo",
+            "teal",
+          ],
+          description: "Accent color (default: violet)",
+        },
+        chapters: {
+          type: "array",
+          description: "Chapter titles to create",
+          items: { type: "string" },
+        },
       },
-      required: ["topic"],
+      required: ["title"],
     },
   },
   {
     name: "list_courses",
-    description:
-      "List your courses with optional status filter and progress summary",
+    description: "List your courses on emrAIo with chapter/resource counts",
     inputSchema: {
       type: "object" as const,
       properties: {
         status: {
           type: "string",
-          enum: ["draft", "active", "completed", "archived"],
+          enum: ["draft", "published"],
           description: "Filter by status",
         },
       },
@@ -45,7 +58,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: "get_course",
     description:
-      "Get full course details including modules, resources, and progress",
+      "Get full course details including chapters, videos, notebooks, and papers",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -57,37 +70,36 @@ export const TOOL_DEFINITIONS = [
   {
     name: "add_resource",
     description:
-      "Add a learning resource (video, paper, notebook, etc.) to a module",
+      "Add a resource (video, paper, or notebook link) to a chapter",
     inputSchema: {
       type: "object" as const,
       properties: {
-        module_id: { type: "string", description: "Module UUID" },
+        chapter_id: { type: "string", description: "Chapter UUID" },
         type: {
           type: "string",
-          enum: ["youtube", "paper", "colab", "github", "article", "other"],
+          enum: ["video", "paper", "notebook"],
           description: "Resource type",
         },
         title: { type: "string", description: "Resource title" },
         url: { type: "string", description: "Resource URL" },
-        description: { type: "string", description: "Resource description" },
+        description: {
+          type: "string",
+          description: "Resource description (for papers and notebooks)",
+        },
       },
-      required: ["module_id", "type", "title", "url"],
+      required: ["chapter_id", "type", "title", "url"],
     },
   },
   {
-    name: "update_progress",
-    description: "Update your progress on a learning resource",
+    name: "publish_course",
+    description:
+      "Publish a draft course so it becomes visible on the platform. Requires at least 1 chapter with content.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        resource_id: { type: "string", description: "Resource UUID" },
-        completed: {
-          type: "boolean",
-          description: "Whether the resource is completed",
-        },
-        notes: { type: "string", description: "Notes about the resource" },
+        course_id: { type: "string", description: "Course UUID" },
       },
-      required: ["resource_id"],
+      required: ["course_id"],
     },
   },
   {
@@ -136,8 +148,8 @@ export async function handleToolCall(
       return getCourse(args, userId);
     case "add_resource":
       return addResource(args, userId);
-    case "update_progress":
-      return updateProgress(args, userId);
+    case "publish_course":
+      return publishCourse(args, userId);
     case "search_youtube":
       return searchYoutube(args);
     case "suggest_papers":
@@ -161,23 +173,34 @@ async function createCourse(
   args: Record<string, unknown>,
   userId: string
 ): Promise<ToolResult> {
-  const topic = args.topic as string;
-  if (!topic) return err("topic is required");
+  const title = args.title as string;
+  if (!title) return err("title is required");
 
-  const difficulty = (args.difficulty as string) ?? "beginner";
-  const numModules = Math.min(Math.max(Number(args.num_modules) || 5, 1), 20);
   const description = (args.description as string) ?? "";
+  const accentColor = (args.accent_color as string) ?? "violet";
+  const chapterTitles = (args.chapters as string[]) ?? [];
 
   const supabase = createServiceClient();
 
+  // Generate unique slug
+  let slug = slugify(title);
+  const { data: existing } = await supabase
+    .from("courses")
+    .select("slug")
+    .like("slug", `${slug}%`);
+
+  if (existing && existing.length > 0) {
+    slug = `${slug}-${existing.length + 1}`;
+  }
+
   const { data: course, error: courseErr } = await supabase
-    .from("mcp_courses")
+    .from("courses")
     .insert({
-      user_id: userId,
-      title: topic,
-      description,
-      topic,
-      difficulty,
+      author_id: userId,
+      slug,
+      title: title.trim(),
+      description: description.trim(),
+      accent_color: accentColor,
       status: "draft",
     })
     .select()
@@ -186,22 +209,37 @@ async function createCourse(
   if (courseErr || !course)
     return err(`Failed to create course: ${courseErr?.message}`);
 
-  const modules = Array.from({ length: numModules }, (_, i) => ({
-    course_id: course.id,
-    title: `Module ${i + 1}`,
-    sort_order: i,
-    status: "not_started",
-  }));
+  // Create chapters if provided
+  let chapters: unknown[] = [];
+  if (chapterTitles.length > 0) {
+    const rows = chapterTitles.map((t, i) => ({
+      course_id: course.id,
+      title: typeof t === "string" ? t.trim() : `Chapter ${i + 1}`,
+      description: "",
+      order: i,
+      slug: slugify(typeof t === "string" ? t : `chapter-${i + 1}`),
+    }));
 
-  const { data: createdModules, error: modErr } = await supabase
-    .from("mcp_course_modules")
-    .insert(modules)
-    .select();
+    const { data: created, error: chErr } = await supabase
+      .from("course_chapters")
+      .insert(rows)
+      .select();
 
-  if (modErr)
-    return err(`Course created but modules failed: ${modErr.message}`);
+    if (chErr)
+      return err(`Course created but chapters failed: ${chErr.message}`);
+    chapters = created ?? [];
+  }
 
-  return ok({ course, modules: createdModules });
+  return ok({
+    course: {
+      id: course.id,
+      slug: course.slug,
+      title: course.title,
+      status: course.status,
+      url: `https://www.emraio.com/course/${course.slug}`,
+    },
+    chapters,
+  });
 }
 
 // ──── list_courses ─────────────────────────────────────────
@@ -213,11 +251,12 @@ async function listCourses(
   const supabase = createServiceClient();
 
   let query = supabase
-    .from("mcp_courses")
+    .from("courses")
     .select(
-      `*, mcp_course_modules(id, mcp_course_resources(id, mcp_user_progress(completed, user_id)))`
+      `id, slug, title, description, accent_color, status, created_at, published_at,
+       course_chapters(id, title, chapter_videos(id), chapter_notebooks(id), chapter_papers(id))`
     )
-    .eq("user_id", userId)
+    .eq("author_id", userId)
     .order("created_at", { ascending: false });
 
   if (args.status) query = query.eq("status", args.status as string);
@@ -226,36 +265,34 @@ async function listCourses(
   if (error) return err(`Failed to list courses: ${error.message}`);
 
   const result = (courses ?? []).map((c) => {
-    let totalResources = 0;
-    let completedResources = 0;
-
-    for (const m of (c.mcp_course_modules ?? []) as Array<{
+    const chapters = (c.course_chapters ?? []) as Array<{
       id: string;
-      mcp_course_resources: Array<{
-        id: string;
-        mcp_user_progress: Array<{ completed: boolean; user_id: string }>;
-      }>;
-    }>) {
-      for (const r of m.mcp_course_resources ?? []) {
-        totalResources++;
-        if (
-          (r.mcp_user_progress ?? []).some(
-            (p) => p.completed && p.user_id === userId
-          )
-        ) {
-          completedResources++;
-        }
-      }
+      title: string;
+      chapter_videos: { id: string }[];
+      chapter_notebooks: { id: string }[];
+      chapter_papers: { id: string }[];
+    }>;
+
+    let videos = 0,
+      notebooks = 0,
+      papers = 0;
+    for (const ch of chapters) {
+      videos += (ch.chapter_videos ?? []).length;
+      notebooks += (ch.chapter_notebooks ?? []).length;
+      papers += (ch.chapter_papers ?? []).length;
     }
 
     return {
       id: c.id,
+      slug: c.slug,
       title: c.title,
-      topic: c.topic,
-      difficulty: c.difficulty,
       status: c.status,
+      chapters: chapters.length,
+      videos,
+      notebooks,
+      papers,
+      url: `https://www.emraio.com/course/${c.slug}`,
       created_at: c.created_at,
-      progress: `${completedResources}/${totalResources}`,
     };
   });
 
@@ -274,28 +311,46 @@ async function getCourse(
   const supabase = createServiceClient();
 
   const { data: course, error } = await supabase
-    .from("mcp_courses")
+    .from("courses")
     .select(
-      `*, mcp_course_modules(*, mcp_course_resources(*, mcp_user_progress(*)))`
+      `*, course_chapters(*, chapter_videos(*), chapter_notebooks(*), chapter_papers(*))`
     )
     .eq("id", courseId)
-    .eq("user_id", userId)
+    .eq("author_id", userId)
     .single();
 
   if (error || !course) return err("Course not found or access denied");
 
-  const modules = (
-    (course.mcp_course_modules ?? []) as Array<Record<string, unknown>>
+  // Sort chapters and their resources by order
+  const chapters = (
+    (course.course_chapters ?? []) as Array<Record<string, unknown>>
   )
-    .sort((a, b) => (a.sort_order as number) - (b.sort_order as number))
-    .map((m) => ({
-      ...m,
-      mcp_course_resources: (
-        (m.mcp_course_resources as Array<Record<string, unknown>>) ?? []
-      ).sort((a, b) => (a.sort_order as number) - (b.sort_order as number)),
+    .sort((a, b) => (a.order as number) - (b.order as number))
+    .map((ch) => ({
+      id: ch.id,
+      title: ch.title,
+      description: ch.description,
+      order: ch.order,
+      videos: (
+        (ch.chapter_videos as Array<Record<string, unknown>>) ?? []
+      ).sort((a, b) => (a.order as number) - (b.order as number)),
+      notebooks: (
+        (ch.chapter_notebooks as Array<Record<string, unknown>>) ?? []
+      ).sort((a, b) => (a.order as number) - (b.order as number)),
+      papers: (
+        (ch.chapter_papers as Array<Record<string, unknown>>) ?? []
+      ).sort((a, b) => (a.order as number) - (b.order as number)),
     }));
 
-  return ok({ ...course, mcp_course_modules: modules });
+  return ok({
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    description: course.description,
+    status: course.status,
+    url: `https://www.emraio.com/course/${course.slug}`,
+    chapters,
+  });
 }
 
 // ──── add_resource ─────────────────────────────────────────
@@ -304,96 +359,177 @@ async function addResource(
   args: Record<string, unknown>,
   userId: string
 ): Promise<ToolResult> {
-  const moduleId = args.module_id as string;
-  if (!moduleId) return err("module_id is required");
+  const chapterId = args.chapter_id as string;
+  if (!chapterId) return err("chapter_id is required");
+
+  const type = args.type as string;
+  if (!type) return err("type is required (video, paper, or notebook)");
+
+  const title = args.title as string;
+  const url = args.url as string;
+  if (!title || !url) return err("title and url are required");
 
   const supabase = createServiceClient();
 
-  // Verify ownership through module -> course -> user_id
-  const { data: mod } = await supabase
-    .from("mcp_course_modules")
-    .select("id, mcp_courses!inner(user_id)")
-    .eq("id", moduleId)
+  // Verify ownership: chapter -> course -> author_id
+  const { data: chapter } = await supabase
+    .from("course_chapters")
+    .select("id, courses!inner(author_id)")
+    .eq("id", chapterId)
     .single();
 
-  if (!mod) return err("Module not found");
+  if (!chapter) return err("Chapter not found");
 
-  const owner = (mod as unknown as { mcp_courses: { user_id: string } })
-    .mcp_courses.user_id;
+  const owner = (chapter as unknown as { courses: { author_id: string } })
+    .courses.author_id;
   if (owner !== userId)
-    return err("Access denied: module belongs to another user");
+    return err("Access denied: chapter belongs to another user");
 
-  const { count } = await supabase
-    .from("mcp_course_resources")
-    .select("id", { count: "exact", head: true })
-    .eq("module_id", moduleId);
+  if (type === "video") {
+    // Extract youtube_id from URL if possible
+    let youtubeId: string | null = null;
+    try {
+      const parsed = new URL(url);
+      if (
+        parsed.hostname.includes("youtube.com") ||
+        parsed.hostname.includes("youtu.be")
+      ) {
+        youtubeId =
+          parsed.searchParams.get("v") ||
+          parsed.pathname.split("/").pop() ||
+          null;
+      }
+    } catch {
+      /* not a valid URL, store as-is */
+    }
 
-  const { data: resource, error } = await supabase
-    .from("mcp_course_resources")
-    .insert({
-      module_id: moduleId,
-      type: (args.type as string) ?? "other",
-      title: args.title as string,
-      url: args.url as string,
-      description: (args.description as string) ?? "",
-      sort_order: count ?? 0,
-    })
-    .select()
-    .single();
+    const { count } = await supabase
+      .from("chapter_videos")
+      .select("id", { count: "exact", head: true })
+      .eq("chapter_id", chapterId);
 
-  if (error || !resource)
-    return err(`Failed to add resource: ${error?.message}`);
-  return ok(resource);
+    const { data, error } = await supabase
+      .from("chapter_videos")
+      .insert({
+        chapter_id: chapterId,
+        title: title.trim(),
+        video_url: url.trim(),
+        embed_url: youtubeId
+          ? `https://www.youtube.com/embed/${youtubeId}`
+          : url.trim(),
+        youtube_id: youtubeId,
+        platform: youtubeId ? "youtube" : "other",
+        order: count ?? 0,
+        is_primary: (count ?? 0) === 0,
+      })
+      .select()
+      .single();
+
+    if (error) return err(`Failed to add video: ${error.message}`);
+    return ok(data);
+  }
+
+  if (type === "notebook") {
+    const { count } = await supabase
+      .from("chapter_notebooks")
+      .select("id", { count: "exact", head: true })
+      .eq("chapter_id", chapterId);
+
+    const { data, error } = await supabase
+      .from("chapter_notebooks")
+      .insert({
+        chapter_id: chapterId,
+        title: title.trim(),
+        colab_url: url.trim(),
+        description: ((args.description as string) ?? "").trim(),
+        order: count ?? 0,
+      })
+      .select()
+      .single();
+
+    if (error) return err(`Failed to add notebook: ${error.message}`);
+    return ok(data);
+  }
+
+  if (type === "paper") {
+    const { count } = await supabase
+      .from("chapter_papers")
+      .select("id", { count: "exact", head: true })
+      .eq("chapter_id", chapterId);
+
+    const { data, error } = await supabase
+      .from("chapter_papers")
+      .insert({
+        chapter_id: chapterId,
+        title: title.trim(),
+        url: url.trim(),
+        description: ((args.description as string) ?? "").trim(),
+        order: count ?? 0,
+      })
+      .select()
+      .single();
+
+    if (error) return err(`Failed to add paper: ${error.message}`);
+    return ok(data);
+  }
+
+  return err(`Unknown resource type: ${type}. Use video, paper, or notebook.`);
 }
 
-// ──── update_progress ──────────────────────────────────────
+// ──── publish_course ───────────────────────────────────────
 
-async function updateProgress(
+async function publishCourse(
   args: Record<string, unknown>,
   userId: string
 ): Promise<ToolResult> {
-  const resourceId = args.resource_id as string;
-  if (!resourceId) return err("resource_id is required");
+  const courseId = args.course_id as string;
+  if (!courseId) return err("course_id is required");
 
   const supabase = createServiceClient();
 
-  // Verify ownership through resource -> module -> course -> user_id
-  const { data: resource } = await supabase
-    .from("mcp_course_resources")
-    .select("id, mcp_course_modules!inner(mcp_courses!inner(user_id))")
-    .eq("id", resourceId)
+  // Verify ownership
+  const { data: course } = await supabase
+    .from("courses")
+    .select("id, status")
+    .eq("id", courseId)
+    .eq("author_id", userId)
     .single();
 
-  if (!resource) return err("Resource not found");
+  if (!course) return err("Course not found or access denied");
 
-  const owner = (
-    resource as unknown as {
-      mcp_course_modules: { mcp_courses: { user_id: string } };
-    }
-  ).mcp_course_modules.mcp_courses.user_id;
-  if (owner !== userId) return err("Access denied");
+  // Check it has at least 1 chapter with content
+  const { data: chapters } = await supabase
+    .from("course_chapters")
+    .select("id, chapter_videos(id), chapter_notebooks(id), chapter_papers(id)")
+    .eq("course_id", courseId);
 
-  const upsertData: Record<string, unknown> = {
-    user_id: userId,
-    resource_id: resourceId,
-  };
+  if (!chapters || chapters.length === 0)
+    return err("Course must have at least one chapter to publish");
 
-  if (args.completed !== undefined) {
-    upsertData.completed = args.completed;
-    upsertData.completed_at = args.completed
-      ? new Date().toISOString()
-      : null;
-  }
-  if (args.notes !== undefined) upsertData.notes = args.notes;
+  const hasContent = chapters.some((ch: Record<string, unknown>) => {
+    const vids = (ch.chapter_videos as unknown[]) ?? [];
+    const nbs = (ch.chapter_notebooks as unknown[]) ?? [];
+    const pps = (ch.chapter_papers as unknown[]) ?? [];
+    return vids.length > 0 || nbs.length > 0 || pps.length > 0;
+  });
+
+  if (!hasContent)
+    return err("At least one chapter must have a video, notebook, or paper");
 
   const { data, error } = await supabase
-    .from("mcp_user_progress")
-    .upsert(upsertData, { onConflict: "user_id,resource_id" })
+    .from("courses")
+    .update({ status: "published", published_at: new Date().toISOString() })
+    .eq("id", courseId)
     .select()
     .single();
 
-  if (error) return err(`Failed to update progress: ${error.message}`);
-  return ok(data);
+  if (error) return err(`Failed to publish: ${error.message}`);
+
+  return ok({
+    id: data.id,
+    status: "published",
+    url: `https://www.emraio.com/course/${data.slug}`,
+  });
 }
 
 // ──── search_youtube ───────────────────────────────────────
