@@ -120,7 +120,9 @@ export const COURSE_CATEGORIES = [
   { value: "general", label: "General" },
 ] as const;
 
-export type CourseCategory = (typeof COURSE_CATEGORIES)[number]["value"];
+export type CourseCategory = string;
+
+export const CATEGORY_CUSTOM = "__custom__";
 
 export interface CourseFormData {
   title: string;

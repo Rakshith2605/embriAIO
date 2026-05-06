@@ -117,8 +117,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (valid.includes(body.visibility)) updates.visibility = body.visibility;
   }
   if (body.category !== undefined) {
-    const validCategories = ["nlp", "computer-vision", "optimization", "general"];
-    if (validCategories.includes(body.category)) updates.category = body.category;
+    const cat = (body.category as string).trim().toLowerCase().replace(/\s+/g, "-");
+    if (cat.length > 0) updates.category = cat;
   }
   if (body.status !== undefined) {
     const validStatus = ["draft", "published"];

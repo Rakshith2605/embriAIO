@@ -24,7 +24,6 @@ import type {
   CourseVisibility,
   CourseFormData,
   ChapterFormData,
-  CourseCategory,
 } from "@/types/user-course";
 import { COURSE_CATEGORIES } from "@/types/user-course";
 import { ColorPicker } from "./ColorPicker";
@@ -499,8 +498,14 @@ export function CourseEditor({ initial }: Props) {
               Category
             </label>
             <select
-              value={form.category}
-              onChange={(e) => updateField("category", e.target.value as CourseCategory)}
+              value={COURSE_CATEGORIES.some((c) => c.value === form.category) ? form.category : "__custom__"}
+              onChange={(e) => {
+                if (e.target.value === "__custom__") {
+                  updateField("category", "");
+                } else {
+                  updateField("category", e.target.value);
+                }
+              }}
               className="w-full px-4 py-3 font-source-serif text-[14px] border outline-none focus:ring-1 focus:ring-[#C0392B] appearance-none"
               style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#1C1610" }}
             >
@@ -509,7 +514,20 @@ export function CourseEditor({ initial }: Props) {
                   {cat.label}
                 </option>
               ))}
+              <option value="__custom__">Add custom category...</option>
             </select>
+            {!COURSE_CATEGORIES.some((c) => c.value === form.category) && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  value={form.category}
+                  onChange={(e) => updateField("category", e.target.value)}
+                  placeholder="Enter custom category (e.g. reinforcement-learning)"
+                  className="flex-1 px-4 py-3 font-source-serif text-[14px] border outline-none focus:ring-1 focus:ring-[#C0392B]"
+                  style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#1C1610" }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

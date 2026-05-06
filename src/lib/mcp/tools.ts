@@ -43,6 +43,10 @@ export const TOOL_DEFINITIONS = [
           description:
             "Number of chapters to auto-generate (used when chapters array is not provided)",
         },
+        category: {
+          type: "string",
+          description: "Course category for browse page grouping (e.g. nlp, computer-vision, reinforcement-learning). Defaults to 'general'.",
+        },
       },
       required: ["title"],
     },
@@ -210,6 +214,11 @@ async function createCourse(
   const accentColor = (args.accent_color as string) ?? "violet";
   let chapterTitles = (args.chapters as string[]) ?? [];
 
+  const rawCategory = (args.category as string) ?? "";
+  const category = rawCategory.trim().length > 0
+    ? rawCategory.trim().toLowerCase().replace(/\s+/g, "-")
+    : "general";
+
   // Accept num_modules or num_chapters to auto-generate chapter placeholders
   if (
     chapterTitles.length === 0 &&
@@ -243,6 +252,7 @@ async function createCourse(
       title: title.trim(),
       description: description.trim(),
       accent_color: accentColor,
+      category,
       status: "draft",
       created_via: "claude",
     })
@@ -278,6 +288,7 @@ async function createCourse(
       id: course.id,
       slug: course.slug,
       title: course.title,
+      category: course.category,
       status: "draft (pending review)",
       created_via: "claude",
       review_url: `https://www.emraio.com/my-courses/${course.id}/review`,
@@ -347,7 +358,7 @@ async function listCourses(
   let query = supabase
     .from("courses")
     .select(
-      `id, slug, title, description, accent_color, status, created_at, published_at,
+      `id, slug, title, description, accent_color, status, category, created_at, published_at,
        course_chapters(id, title, chapter_videos(id), chapter_notebooks(id), chapter_papers(id))`
     )
     .eq("author_id", userId)
@@ -381,6 +392,7 @@ async function listCourses(
       slug: c.slug,
       title: c.title,
       status: c.status,
+      category: c.category,
       chapters: chapters.length,
       videos,
       notebooks,
@@ -442,6 +454,7 @@ async function getCourse(
     title: course.title,
     description: course.description,
     status: course.status,
+    category: course.category,
     url: `https://www.emraio.com/course/${course.slug}`,
     chapters,
   });

@@ -152,7 +152,9 @@ export async function POST(req: NextRequest) {
   const vis = validVisibility.includes(visibility) ? visibility : "public";
 
   const validCategories = ["nlp", "computer-vision", "optimization", "general"];
-  const cat = validCategories.includes(category) ? category : "general";
+  const cat = category && typeof category === "string" && category.trim().length > 0
+    ? category.trim().toLowerCase().replace(/\s+/g, "-")
+    : "general";
 
   // Generate unique slug
   let slug = slugify(title);
