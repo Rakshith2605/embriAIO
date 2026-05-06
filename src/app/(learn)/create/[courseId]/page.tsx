@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase";
 import { CourseEditor } from "@/components/course/CourseEditor";
-import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData, PaperFormData, NotebookSource } from "@/types/user-course";
+import type { CourseFormData, ChapterFormData, VideoFormData, NotebookFormData, PaperFormData, NotebookSource, CourseCategory } from "@/types/user-course";
 
 export const metadata = { title: "Edit Course — emrAIo" };
 
@@ -72,6 +72,7 @@ export default async function EditCoursePage({ params }: { params: { courseId: s
     description: course.description ?? "",
     accent_color: course.accent_color ?? "violet",
     visibility: course.visibility ?? "public",
+    category: (course.category as CourseCategory) ?? "general",
     chapters: chapters.length > 0 ? chapters : [{ title: "", description: "", videos: [], notebooks: [], papers: [] }],
   };
 

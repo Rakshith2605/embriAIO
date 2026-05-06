@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { title, description, accent_color, visibility } = body;
+  const { title, description, accent_color, visibility, category } = body;
 
   if (!title || typeof title !== "string" || title.trim().length < 3) {
     return NextResponse.json(
@@ -150,6 +150,9 @@ export async function POST(req: NextRequest) {
 
   const validVisibility = ["public", "restricted", "private"];
   const vis = validVisibility.includes(visibility) ? visibility : "public";
+
+  const validCategories = ["nlp", "computer-vision", "optimization", "general"];
+  const cat = validCategories.includes(category) ? category : "general";
 
   // Generate unique slug
   let slug = slugify(title);
@@ -171,6 +174,7 @@ export async function POST(req: NextRequest) {
       description: (description ?? "").trim(),
       accent_color: accent_color ?? "violet",
       visibility: vis,
+      category: cat,
       status: "draft",
     })
     .select()

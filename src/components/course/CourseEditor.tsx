@@ -17,13 +17,16 @@ import {
   Globe,
   Lock,
   Shield,
+  Tag,
 } from "lucide-react";
 import type {
   AccentColor,
   CourseVisibility,
   CourseFormData,
   ChapterFormData,
+  CourseCategory,
 } from "@/types/user-course";
+import { COURSE_CATEGORIES } from "@/types/user-course";
 import { ColorPicker } from "./ColorPicker";
 import { VideoInput } from "./VideoInput";
 import { ColabInput } from "./ColabInput";
@@ -85,6 +88,7 @@ export function CourseEditor({ initial }: Props) {
       description: "",
       accent_color: "violet",
       visibility: "public",
+      category: "general",
       chapters: [emptyChapter()],
     }
   );
@@ -147,6 +151,7 @@ export function CourseEditor({ initial }: Props) {
             description: form.description,
             accent_color: form.accent_color,
             visibility: form.visibility,
+            category: form.category,
           }),
         });
         if (!res.ok) {
@@ -165,6 +170,7 @@ export function CourseEditor({ initial }: Props) {
             description: form.description,
             accent_color: form.accent_color,
             visibility: form.visibility,
+            category: form.category,
           }),
         });
         if (!res.ok) {
@@ -481,6 +487,29 @@ export function CourseEditor({ initial }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label
+              className="block font-jetbrains text-[10px] uppercase tracking-wider mb-2"
+              style={{ color: "#8B7355" }}
+            >
+              <Tag className="h-3 w-3 inline mr-1" style={{ color: "#C0392B" }} />
+              Category
+            </label>
+            <select
+              value={form.category}
+              onChange={(e) => updateField("category", e.target.value as CourseCategory)}
+              className="w-full px-4 py-3 font-source-serif text-[14px] border outline-none focus:ring-1 focus:ring-[#C0392B] appearance-none"
+              style={{ background: "#FFFDF5", borderColor: "#C8B882", color: "#1C1610" }}
+            >
+              {COURSE_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
@@ -888,6 +917,26 @@ export function CourseEditor({ initial }: Props) {
             <p className="font-source-serif text-[14px] leading-relaxed mb-4" style={{ color: "#5C4E35" }}>
               {form.description || "No description"}
             </p>
+
+            <div className="flex items-center gap-2 mb-4">
+              <Tag className="h-3.5 w-3.5" style={{ color: "#C0392B" }} />
+              <span
+                className="font-jetbrains text-[9px] uppercase tracking-wider px-2 py-0.5"
+                style={{ background: "#EDE8D5", border: "1px solid #C8B882", color: "#5C4E35" }}
+              >
+                {COURSE_CATEGORIES.find((c) => c.value === form.category)?.label ?? form.category}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4">
+              <Tag className="h-3.5 w-3.5" style={{ color: "#C0392B" }} />
+              <span
+                className="font-jetbrains text-[9px] uppercase tracking-wider px-2 py-0.5"
+                style={{ background: "#EDE8D5", border: "1px solid #C8B882", color: "#5C4E35" }}
+              >
+                {COURSE_CATEGORIES.find((c) => c.value === form.category)?.label ?? form.category}
+              </span>
+            </div>
 
             {/* Visibility selector */}
             <div className="mb-4">

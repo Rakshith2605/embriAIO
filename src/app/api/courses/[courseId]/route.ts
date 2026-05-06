@@ -116,6 +116,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const valid = ["public", "restricted", "private"];
     if (valid.includes(body.visibility)) updates.visibility = body.visibility;
   }
+  if (body.category !== undefined) {
+    const validCategories = ["nlp", "computer-vision", "optimization", "general"];
+    if (validCategories.includes(body.category)) updates.category = body.category;
+  }
   if (body.status !== undefined) {
     const validStatus = ["draft", "published"];
     if (validStatus.includes(body.status)) {

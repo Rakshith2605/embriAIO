@@ -113,11 +113,21 @@ export interface ChapterDetail extends UserChapter {
 
 /* ───── Form / input types ────────────────────────────── */
 
+export const COURSE_CATEGORIES = [
+  { value: "nlp", label: "Natural Language Processing" },
+  { value: "computer-vision", label: "Computer Vision & Multimodal" },
+  { value: "optimization", label: "Optimization & Efficiency" },
+  { value: "general", label: "General" },
+] as const;
+
+export type CourseCategory = (typeof COURSE_CATEGORIES)[number]["value"];
+
 export interface CourseFormData {
   title: string;
   description: string;
   accent_color: AccentColor;
   visibility: CourseVisibility;
+  category: CourseCategory;
   chapters: ChapterFormData[];
 }
 
