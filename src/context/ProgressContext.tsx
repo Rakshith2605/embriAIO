@@ -17,12 +17,25 @@ function createDefaultState(): ProgressState {
   return { chapters: {} as ProgressState["chapters"], lastUpdatedAt: new Date().toISOString() };
 }
 
+function normalizeState(state: ProgressState): ProgressState {
+  let changed = false;
+  const chapters = { ...state.chapters };
+  for (const cid of Object.keys(chapters)) {
+    const ch = chapters[cid as ChapterId];
+    if (!ch.videoProgress) {
+      chapters[cid as ChapterId] = { ...ch, videoProgress: {} };
+      changed = true;
+    }
+  }
+  return changed ? { ...state, chapters } : state;
+}
+
 function progressReducer(state: ProgressState, action: ProgressAction): ProgressState {
   const now = new Date().toISOString();
 
   switch (action.type) {
     case "HYDRATE":
-      return action.state;
+      return normalizeState(action.state);
 
     case "MARK_NOTEBOOK_COMPLETE": {
       const prev = state.chapters[action.chapterId] ?? createEmptyChapterProgress(action.chapterId);
@@ -179,13 +192,14 @@ function progressReducer(state: ProgressState, action: ProgressAction): Progress
 // ─── Redis merge ──────────────────────────────────────────────────────────────
 
 function mergeProgressStates(local: ProgressState, remote: ProgressState): ProgressState {
+  const normalizedRemote = normalizeState(remote);
   const merged: ProgressState = {
     ...local,
     lastUpdatedAt: new Date().toISOString(),
     chapters: { ...local.chapters },
   };
 
-  for (const [chapterId, remoteChapter] of Object.entries(remote.chapters)) {
+  for (const [chapterId, remoteChapter] of Object.entries(normalizedRemote.chapters)) {
     const cid = chapterId as ChapterId;
     const localChapter = merged.chapters[cid];
 
@@ -246,7 +260,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as ProgressState;
-        dispatch({ type: "HYDRATE", state: parsed });
+        dispatch({ type: "HYDRATE", state: normalizeState(parsed) });
       }
     } catch {
       // corrupted storage — start fresh
