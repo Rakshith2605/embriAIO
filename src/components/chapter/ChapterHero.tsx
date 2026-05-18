@@ -10,8 +10,8 @@ interface Props {
 }
 
 export function ChapterHero({ chapter }: Props) {
-  const { completedCount, totalNotebooks, percentComplete, isHydrated } = useProgress(chapter.id);
-  const isComplete = isHydrated && totalNotebooks > 0 && completedCount === totalNotebooks;
+  const { completedItems, totalItems, percentComplete, isHydrated } = useProgress(chapter.id);
+  const isComplete = isHydrated && totalItems > 0 && completedItems === totalItems;
 
   return (
     <div
@@ -58,7 +58,7 @@ export function ChapterHero({ chapter }: Props) {
         </div>
 
         {/* Progress ring */}
-        {isHydrated && totalNotebooks > 0 && (
+        {isHydrated && totalItems > 0 && (
           <div className="shrink-0 flex flex-col items-center gap-1">
             <div className="relative h-14 w-14">
               <svg className="h-14 w-14 -rotate-90" viewBox="0 0 56 56">
@@ -86,7 +86,7 @@ export function ChapterHero({ chapter }: Props) {
               </div>
             </div>
             <span className="font-jetbrains text-[9px]" style={{ color: isComplete ? '#C0392B' : '#A08E6B' }}>
-              {isComplete ? 'Complete!' : `${completedCount}/${totalNotebooks}`}
+              {isComplete ? 'Complete!' : `${completedItems}/${totalItems}`}
             </span>
           </div>
         )}

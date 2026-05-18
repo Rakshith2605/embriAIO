@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { PlayCircle, ExternalLink, Clock } from "lucide-react";
-import { ChapterVideo } from "@/types/curriculum";
+import { ExternalLink, Clock } from "lucide-react";
+import { ChapterVideo, ChapterId } from "@/types/curriculum";
 import { cn } from "@/lib/utils";
+import { YouTubePlayer } from "@/components/video/YouTubePlayer";
 
 interface Props {
   video: ChapterVideo;
   extraVideos?: ChapterVideo[];
+  chapterId: ChapterId;
   onWatched?: () => void;
   compact?: boolean;
 }
@@ -34,71 +36,29 @@ function formatDuration(seconds: number) {
 
 function SingleVideo({
   video,
+  chapterId,
   onWatched,
   compact,
 }: {
   video: ChapterVideo;
+  chapterId: ChapterId;
   onWatched?: () => void;
   compact?: boolean;
 }) {
-  const [clicked, setClicked] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const thumbnailUrl = `https://img.youtube.com/vi/${video.youtubeId}/maxresdefault.jpg`;
   const watchUrl = `https://www.youtube.com/watch?v=${video.youtubeId}`;
 
   return (
     <div className={cn("rounded-xl overflow-hidden border border-border bg-black", compact ? "aspect-video" : "")}>
-      {!clicked ? (
-        <button
-          onClick={() => setClicked(true)}
-          className="relative w-full group"
-          style={{ aspectRatio: "16/9" }}
-          aria-label={`Play: ${video.title}`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={thumbnailUrl}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-            }}
-          />
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-            <div className="flex flex-col items-center gap-3">
-              <PlayCircle className="h-16 w-16 text-white drop-shadow-lg group-hover:scale-105 transition-transform" />
-              {!compact && (
-                <span className="text-white text-sm font-medium drop-shadow px-4 text-center max-w-sm leading-snug">
-                  {video.title}
-                </span>
-              )}
-            </div>
-          </div>
-        </button>
-      ) : (
-        <div className="relative" style={{ aspectRatio: "16/9" }}>
-          {!isLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black">
-              <div className="h-8 w-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-            </div>
-          )}
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
-            title={video.title}
-            className="absolute inset-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            onLoad={() => {
-              setIsLoaded(true);
-              setTimeout(() => onWatched?.(), 5000);
-            }}
-          />
-        </div>
-      )}
+      <YouTubePlayer
+        videoId={video.youtubeId}
+        title={video.title}
+        chapterId={chapterId}
+        onComplete={onWatched}
+        compact={compact}
+      />
 
       {!compact && (
-        <div className="px-3 py-2 bg-background/5 flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground truncate">{video.title}</p>
+        <div className="px-3 py-2 bg-background/5 flex items-center justify-end gap-2">
           <a
             href={watchUrl}
             target="_blank"
@@ -114,13 +74,13 @@ function SingleVideo({
   );
 }
 
-export function VideoEmbed({ video, extraVideos, onWatched, compact = false }: Props) {
+export function VideoEmbed({ video, extraVideos, chapterId, onWatched, compact = false }: Props) {
   const allVideos = [video, ...(extraVideos ?? [])];
   const [activeIdx, setActiveIdx] = useState(0);
   const active = allVideos[activeIdx];
 
   if (allVideos.length === 1) {
-    return <SingleVideo video={video} onWatched={onWatched} compact={compact} />;
+    return <SingleVideo video={video} chapterId={chapterId} onWatched={onWatched} compact={compact} />;
   }
 
   return (
@@ -154,7 +114,7 @@ export function VideoEmbed({ video, extraVideos, onWatched, compact = false }: P
         })}
       </div>
 
-      <SingleVideo key={active.youtubeId} video={active} onWatched={activeIdx === 0 ? onWatched : undefined} compact={compact} />
+      <SingleVideo key={active.youtubeId} video={active} chapterId={chapterId} onWatched={activeIdx === 0 ? onWatched : undefined} compact={compact} />
     </div>
   );
 }

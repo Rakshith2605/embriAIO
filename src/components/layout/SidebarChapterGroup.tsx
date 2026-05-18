@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, CheckCircle2, Circle } from "lucide-react";
 import { Chapter } from "@/types/curriculum";
 import { useProgress } from "@/hooks/useProgress";
 import { SidebarNotebookItem } from "./SidebarNotebookItem";
@@ -21,7 +21,7 @@ export function SidebarChapterGroup({ chapter }: Props) {
   const isActiveChapter = pathname.startsWith(baseHref);
 
   const [isOpen, setIsOpen] = useState(isActiveChapter);
-  const { completedCount, totalNotebooks, percentComplete, getNotebookStatus, isHydrated } =
+  const { completedItems, totalItems, percentComplete, getNotebookStatus, isVideoCompleted, isHydrated } =
     useProgress(chapter.id);
 
   // All videos for this chapter
@@ -75,9 +75,9 @@ export function SidebarChapterGroup({ chapter }: Props) {
 
         {/* Progress count + chevron */}
         <div className="flex items-center gap-1 shrink-0">
-          {isHydrated && totalNotebooks > 0 && (
+          {isHydrated && totalItems > 0 && (
             <span className="font-jetbrains text-[8px]" style={{ color: '#A08E6B' }}>
-              {completedCount}/{totalNotebooks}
+              {completedItems}/{totalItems}
             </span>
           )}
           <ChevronRight
@@ -88,7 +88,7 @@ export function SidebarChapterGroup({ chapter }: Props) {
       </button>
 
       {/* Progress bar */}
-      {isHydrated && totalNotebooks > 0 && percentComplete > 0 && (
+      {isHydrated && totalItems > 0 && percentComplete > 0 && (
         <div className="h-[3px] overflow-hidden" style={{ background: 'rgba(200,184,130,0.3)' }}>
           <div
             className="h-full transition-all duration-500"
@@ -101,23 +101,30 @@ export function SidebarChapterGroup({ chapter }: Props) {
       {isOpen && (
         <div className="ml-0 mt-0.5 pb-1">
           {/* Videos */}
-          {allVideos.map((v) => (
-            <Link
-              key={v.youtubeId}
-              href={baseHref}
-              className="flex items-center gap-1.5 py-1 pl-8 pr-4 transition-colors group/video"
-              style={{ color: '#5C4E35' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.color = '#C0392B';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.color = '#5C4E35';
-              }}
-            >
-              <span className="font-jetbrains text-[9px] shrink-0" style={{ color: '#C0392B' }}>↳</span>
-              <span className="font-jetbrains text-[9px] truncate leading-snug">{v.title}</span>
-            </Link>
-          ))}
+          {allVideos.map((v) => {
+            const isVidComplete = isHydrated && isVideoCompleted(v.youtubeId);
+            return (
+              <Link
+                key={v.youtubeId}
+                href={baseHref}
+                className="flex items-center gap-1.5 py-1 pl-8 pr-4 transition-colors group/video"
+                style={{ color: '#5C4E35' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = '#C0392B';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = '#5C4E35';
+                }}
+              >
+                {isVidComplete ? (
+                  <CheckCircle2 className="h-2.5 w-2.5 shrink-0" style={{ color: '#C0392B' }} />
+                ) : (
+                  <Circle className="h-2.5 w-2.5 shrink-0" style={{ color: '#A08E6B' }} />
+                )}
+                <span className="font-jetbrains text-[9px] truncate leading-snug">{v.title}</span>
+              </Link>
+            );
+          })}
 
           {/* Notebooks */}
           {chapter.mainNotebooks.map((nb) => {

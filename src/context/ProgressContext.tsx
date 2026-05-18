@@ -10,7 +10,7 @@ const SYNC_DEBOUNCE_MS = 2000;
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
 function createEmptyChapterProgress(chapterId: ChapterId) {
-  return { chapterId, notebookProgress: {}, videoWatched: false };
+  return { chapterId, notebookProgress: {}, videoProgress: {}, videoWatched: false };
 }
 
 function createDefaultState(): ProgressState {
@@ -87,12 +87,83 @@ function progressReducer(state: ProgressState, action: ProgressAction): Progress
 
     case "MARK_VIDEO_WATCHED": {
       const prev = state.chapters[action.chapterId] ?? createEmptyChapterProgress(action.chapterId);
+      const vp = { ...prev.videoProgress };
+      if (action.videoId) {
+        vp[action.videoId] = {
+          videoId: action.videoId,
+          currentTime: 0,
+          duration: 0,
+          percentWatched: 100,
+          lastWatchedAt: now,
+        };
+      }
       return {
         ...state,
         lastUpdatedAt: now,
         chapters: {
           ...state.chapters,
-          [action.chapterId]: { ...prev, videoWatched: true },
+          [action.chapterId]: { ...prev, videoProgress: vp, videoWatched: true },
+        },
+      };
+    }
+
+    case "UPDATE_VIDEO_PROGRESS": {
+      const prev = state.chapters[action.chapterId] ?? createEmptyChapterProgress(action.chapterId);
+      const vp = {
+        ...prev.videoProgress,
+        [action.videoId]: {
+          videoId: action.videoId,
+          currentTime: action.currentTime,
+          duration: action.duration,
+          percentWatched: action.percentWatched,
+          lastWatchedAt: now,
+        },
+      };
+      const allVideosWatched = Object.keys(vp).length > 0 && Object.values(vp).every((v) => v.percentWatched >= 90);
+      return {
+        ...state,
+        lastUpdatedAt: now,
+        chapters: {
+          ...state.chapters,
+          [action.chapterId]: { ...prev, videoProgress: vp, videoWatched: prev.videoWatched || allVideosWatched },
+        },
+      };
+    }
+
+    case "MARK_VIDEO_COMPLETED": {
+      const prev = state.chapters[action.chapterId] ?? createEmptyChapterProgress(action.chapterId);
+      const vp = {
+        ...prev.videoProgress,
+        [action.videoId]: {
+          videoId: action.videoId,
+          currentTime: (prev.videoProgress[action.videoId]?.duration ?? 0),
+          duration: (prev.videoProgress[action.videoId]?.duration ?? 0),
+          percentWatched: 100,
+          lastWatchedAt: now,
+        },
+      };
+      const allVideosWatched = Object.values(vp).every((v) => v.percentWatched >= 90);
+      return {
+        ...state,
+        lastUpdatedAt: now,
+        chapters: {
+          ...state.chapters,
+          [action.chapterId]: { ...prev, videoProgress: vp, videoWatched: prev.videoWatched || allVideosWatched },
+        },
+      };
+    }
+
+    case "RESET_VIDEO_PROGRESS": {
+      const prev = state.chapters[action.chapterId];
+      if (!prev) return state;
+      const { [action.videoId]: _, ...rest } = prev.videoProgress;
+      const allVideosWatched = Object.keys(rest).length > 0 && Object.values(rest).every((v) => v.percentWatched >= 90);
+      return {
+        ...state,
+        lastUpdatedAt: now,
+        chapters: {
+          ...state.chapters,
+          [action.chapterId]: { ...prev, videoProgress: rest, videoWatched: allVideosWatched },
         },
       };
     }
@@ -126,16 +197,26 @@ function mergeProgressStates(local: ProgressState, remote: ProgressState): Progr
     const mergedNotebooks = { ...localChapter.notebookProgress };
     for (const [slug, remoteNb] of Object.entries(remoteChapter.notebookProgress)) {
       const localNb = mergedNotebooks[slug];
-      // "completed" in either source wins
       if (!localNb || remoteNb.status === "completed") {
         mergedNotebooks[slug] = remoteNb;
       }
     }
 
+    const mergedVideos = { ...localChapter.videoProgress };
+    for (const [vidId, remoteVid] of Object.entries(remoteChapter.videoProgress)) {
+      const localVid = mergedVideos[vidId];
+      if (!localVid || remoteVid.percentWatched > localVid.percentWatched) {
+        mergedVideos[vidId] = remoteVid;
+      }
+    }
+
+    const allVideosWatched = Object.keys(mergedVideos).length > 0 && Object.values(mergedVideos).every((v) => v.percentWatched >= 90);
+
     merged.chapters[cid] = {
       ...localChapter,
       notebookProgress: mergedNotebooks,
-      videoWatched: localChapter.videoWatched || remoteChapter.videoWatched,
+      videoProgress: mergedVideos,
+      videoWatched: localChapter.videoWatched || remoteChapter.videoWatched || allVideosWatched,
     };
   }
 

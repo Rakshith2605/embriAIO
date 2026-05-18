@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChapterVideo } from "@/types/curriculum";
+import { ChapterVideo, ChapterId } from "@/types/curriculum";
 import { PlayCircle, ChevronDown, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { YouTubePlayer } from "@/components/video/YouTubePlayer";
 
 const sourceLabels: Record<string, string> = {
   raschka:      "Raschka",
@@ -18,9 +19,8 @@ function formatDuration(seconds: number) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; defaultOpen?: boolean }) {
+function VideoRow({ video, chapterId, defaultOpen = false }: { video: ChapterVideo; chapterId: ChapterId; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
-  const [loaded, setLoaded] = useState(false);
   const [hovered, setHovered] = useState(false);
 
   const src = video.source ?? "other";
@@ -105,21 +105,14 @@ function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; default
       {open && (
         <div className="px-4 pb-4">
           <div
-            className="relative overflow-hidden bg-black aspect-video"
+            className="overflow-hidden bg-black"
             style={{ border: '1px solid #C8B882' }}
           >
-            {!loaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black">
-                <div className="h-7 w-7 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              </div>
-            )}
-            <iframe
-              src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+            <YouTubePlayer
+              videoId={video.youtubeId}
               title={video.title}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              onLoad={() => setLoaded(true)}
+              chapterId={chapterId}
+              compact
             />
           </div>
         </div>
@@ -130,10 +123,11 @@ function VideoRow({ video, defaultOpen = false }: { video: ChapterVideo; default
 
 interface Props {
   video?: ChapterVideo;
+  chapterId: ChapterId;
   extraVideos?: ChapterVideo[];
 }
 
-export function VideoList({ video, extraVideos }: Props) {
+export function VideoList({ video, chapterId, extraVideos }: Props) {
   const all = [
     ...(video ? [video] : []),
     ...(extraVideos ?? []),
@@ -151,7 +145,7 @@ export function VideoList({ video, extraVideos }: Props) {
       </div>
       <div style={{ border: '1px solid #C8B882', background: '#FFFDF5' }} className="overflow-hidden">
         {all.map((v, i) => (
-          <VideoRow key={v.youtubeId} video={v} defaultOpen={false} />
+          <VideoRow key={v.youtubeId} video={v} chapterId={chapterId} defaultOpen={false} />
         ))}
       </div>
     </section>

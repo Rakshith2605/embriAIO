@@ -84,9 +84,18 @@ export interface NotebookProgress {
   lastOpenedAt?: string;
 }
 
+export interface VideoProgress {
+  videoId: string;
+  currentTime: number;
+  duration: number;
+  percentWatched: number;
+  lastWatchedAt: string;
+}
+
 export interface ChapterProgress {
   chapterId: ChapterId;
   notebookProgress: Record<string, NotebookProgress>;
+  videoProgress: Record<string, VideoProgress>;
   videoWatched: boolean;
 }
 
@@ -99,7 +108,10 @@ export type ProgressAction =
   | { type: "MARK_NOTEBOOK_COMPLETE"; chapterId: ChapterId; notebookSlug: string }
   | { type: "MARK_NOTEBOOK_IN_PROGRESS"; chapterId: ChapterId; notebookSlug: string }
   | { type: "RESET_NOTEBOOK"; chapterId: ChapterId; notebookSlug: string }
-  | { type: "MARK_VIDEO_WATCHED"; chapterId: ChapterId }
+  | { type: "MARK_VIDEO_WATCHED"; chapterId: ChapterId; videoId?: string }
+  | { type: "UPDATE_VIDEO_PROGRESS"; chapterId: ChapterId; videoId: string; currentTime: number; duration: number; percentWatched: number }
+  | { type: "MARK_VIDEO_COMPLETED"; chapterId: ChapterId; videoId: string }
+  | { type: "RESET_VIDEO_PROGRESS"; chapterId: ChapterId; videoId: string }
   | { type: "RESET_ALL" }
   | { type: "HYDRATE"; state: ProgressState };
 
