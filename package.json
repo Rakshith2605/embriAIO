@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "prebuild": "tsx scripts/fetch-notebooks.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@auth/core": "^0.41.0",
