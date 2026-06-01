@@ -185,6 +185,7 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
       <CourseVideoSection
         videos={videos}
         chapterId={params.chapterId}
+        courseId={courseData.id}
       />
 
       {/* Notebooks */}

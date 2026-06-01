@@ -11,6 +11,7 @@ interface Props {
   videoId: string;
   title: string;
   chapterId: ChapterId;
+  courseId?: string;
   onComplete?: () => void;
   compact?: boolean;
   className?: string;
@@ -55,6 +56,7 @@ export function YouTubePlayer({
   videoId,
   title,
   chapterId,
+  courseId,
   onComplete,
   compact = false,
   className,
@@ -78,6 +80,22 @@ export function YouTubePlayer({
 
   const percentWatched = savedProgress?.percentWatched ?? 0;
 
+  const syncProgressToCourse = useCallback(
+    (currentPercent: number) => {
+      if (!courseId) return;
+      fetch(`/api/courses/${courseId}/videos/progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoId,
+          percentWatched: currentPercent,
+          chapterId,
+        }),
+      }).catch(() => {}); // fail silently
+    },
+    [courseId, videoId, chapterId]
+  );
+
   const flushProgress = useCallback(() => {
     if (!playerRef.current || typeof playerRef.current.getCurrentTime !== "function") return;
     try {
@@ -85,12 +103,14 @@ export function YouTubePlayer({
       const duration = playerRef.current.getDuration();
       if (duration > 0) {
         const pct = (currentTime / duration) * 100;
-        savePosition(currentTime, duration, Math.round(pct * 100) / 100);
+        const roundedPct = Math.round(pct * 100) / 100;
+        savePosition(currentTime, duration, roundedPct);
+        syncProgressToCourse(roundedPct);
       }
     } catch {
       // Player might be in a bad state
     }
-  }, [savePosition]);
+  }, [savePosition, syncProgressToCourse]);
 
   const startTracking = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -106,6 +126,7 @@ export function YouTubePlayer({
         const pct = Math.round((currentTime / duration) * 10000) / 100;
 
         savePosition(currentTime, duration, pct);
+        syncProgressToCourse(pct);
 
         if (pct >= 90 && !completedFiredRef.current) {
           completedFiredRef.current = true;
@@ -115,7 +136,7 @@ export function YouTubePlayer({
         // swallow
       }
     }, SAVE_INTERVAL_MS);
-  }, [savePosition, onComplete]);
+  }, [savePosition, onComplete, syncProgressToCourse]);
 
   const stopTracking = useCallback(() => {
     if (intervalRef.current) {
