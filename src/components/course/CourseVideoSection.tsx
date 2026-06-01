@@ -15,9 +15,10 @@ interface CourseVideo {
 interface Props {
   videos: CourseVideo[];
   chapterId: ChapterId;
+  courseId: string;
 }
 
-export function CourseVideoSection({ videos, chapterId }: Props) {
+export function CourseVideoSection({ videos, chapterId, courseId }: Props) {
   if (videos.length === 0) return null;
 
   return (
@@ -44,6 +45,7 @@ export function CourseVideoSection({ videos, chapterId }: Props) {
                     videoId={v.youtube_id}
                     title={v.title}
                     chapterId={chapterId}
+                    courseId={courseId}
                   />
                 </div>
               </div>
