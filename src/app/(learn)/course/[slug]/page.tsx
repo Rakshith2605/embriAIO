@@ -173,14 +173,17 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
       const hasNotebooks = nbIdList.length > 0;
       const hasPapers = paperIdList.length > 0;
 
-      let wVideo = 0.80, wColab = 0.10, wPaper = 0.10;
-      if (!hasNotebooks) { wVideo += wColab; wColab = 0; }
-      if (!hasPapers) { wVideo += wPaper; wPaper = 0; }
+      const activeCount = (hasVideos ? 1 : 0) + (hasNotebooks ? 1 : 0) + (hasPapers ? 1 : 0);
+      const catWeight = activeCount > 0 ? 1 / activeCount : 0;
 
-      const videoPct = hasVideos ? Math.round((watchedSeconds / totalVideoSeconds) * 100) : 100;
-      const colabPct = hasNotebooks ? Math.round((completedNbs / nbIdList.length) * 100) : 100;
-      const paperPct = hasPapers ? Math.round((completedPapers / paperIdList.length) * 100) : 100;
-      const overallPct = Math.round(videoPct * wVideo + colabPct * wColab + paperPct * wPaper);
+      const videoPct = hasVideos ? Math.round((Math.min(watchedSeconds, totalVideoSeconds) / totalVideoSeconds) * 100) : 0;
+      const colabPct = hasNotebooks ? Math.round((completedNbs / nbIdList.length) * 100) : 0;
+      const paperPct = hasPapers ? Math.round((completedPapers / paperIdList.length) * 100) : 0;
+      const overallPct = Math.round(
+        videoPct * (hasVideos ? catWeight : 0) +
+        colabPct * (hasNotebooks ? catWeight : 0) +
+        paperPct * (hasPapers ? catWeight : 0)
+      );
 
       weightedProgress = {
         totalVideoSeconds,
@@ -193,7 +196,7 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
         colabPercent: colabPct,
         paperPercent: paperPct,
         overallPercent: overallPct,
-        weights: { video: wVideo, colab: wColab, paper: wPaper },
+        weights: { video: hasVideos ? catWeight : 0, colab: hasNotebooks ? catWeight : 0, paper: hasPapers ? catWeight : 0 },
       };
     }
   }
@@ -330,37 +333,27 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5DCC8" }}>
               <div
-                className="h-full rounded-full transition-all flex"
-                style={{ width: `${weightedProgress.overallPercent}%` }}
-              >
-                {weightedProgress.weights.video > 0 && (
-                  <div style={{ width: `${(weightedProgress.videoPercent / 100) * weightedProgress.weights.video * 100 / weightedProgress.overallPercent}%`, background: "#2563EB", height: "100%" }} />
-                )}
-                {weightedProgress.weights.colab > 0 && (
-                  <div style={{ width: `${(weightedProgress.colabPercent / 100) * weightedProgress.weights.colab * 100 / weightedProgress.overallPercent}%`, background: "#CA8A04", height: "100%" }} />
-                )}
-                {weightedProgress.weights.paper > 0 && (
-                  <div style={{ width: `${(weightedProgress.paperPercent / 100) * weightedProgress.weights.paper * 100 / weightedProgress.overallPercent}%`, background: "#059669", height: "100%" }} />
-                )}
-              </div>
+                className="h-full rounded-full transition-all"
+                style={{ width: `${weightedProgress.overallPercent}%`, background: weightedProgress.overallPercent === 100 ? "#059669" : "#C0392B" }}
+              />
             </div>
             <div className="flex gap-3 mt-2 font-jetbrains text-[9px]" style={{ color: "#8B7355" }}>
               {weightedProgress.weights.video > 0 && (
                 <span className="flex items-center gap-1">
                   <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#2563EB" }} />
-                  Video {weightedProgress.videoPercent}% ({Math.round(weightedProgress.watchedVideoSeconds / 60)}m)
+                  Video {weightedProgress.videoPercent}% ({Math.round(weightedProgress.watchedVideoSeconds / 60)}m of {Math.round(weightedProgress.totalVideoSeconds / 60)}m)
                 </span>
               )}
               {weightedProgress.weights.colab > 0 && (
                 <span className="flex items-center gap-1">
                   <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#CA8A04" }} />
-                  Colab {weightedProgress.colabPercent}%
+                  Colab {weightedProgress.completedNotebooks}/{weightedProgress.totalNotebooks} ({weightedProgress.colabPercent}%)
                 </span>
               )}
               {weightedProgress.weights.paper > 0 && (
                 <span className="flex items-center gap-1">
                   <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#059669" }} />
-                  Papers {weightedProgress.paperPercent}%
+                  Papers {weightedProgress.completedPapers}/{weightedProgress.totalPapers} ({weightedProgress.paperPercent}%)
                 </span>
               )}
             </div>

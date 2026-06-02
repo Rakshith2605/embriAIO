@@ -149,21 +149,30 @@ export async function GET() {
   const completedNotebooks = (nbProgress ?? []).filter((n) => n.status === "completed").length;
   const completedPapers = (paperProgress ?? []).filter((p) => p.status === "completed").length;
 
-  // Weighted progress calculation with redistribution
+  // Equal-weight per active category
   const totalNb = nbCountResult?.count ?? 0;
   const totalPpr = paperCountResult?.count ?? 0;
   const hasVideos = totalVideoSeconds > 0;
   const hasNotebooks = totalNb > 0;
   const hasPapers = totalPpr > 0;
 
-  let wVideo = 0.80, wColab = 0.10, wPaper = 0.10;
-  if (!hasNotebooks) { wVideo += wColab; wColab = 0; }
-  if (!hasPapers) { wVideo += wPaper; wPaper = 0; }
+  const activeCount = (hasVideos ? 1 : 0) + (hasNotebooks ? 1 : 0) + (hasPapers ? 1 : 0);
+  const catWeight = activeCount > 0 ? 1 / activeCount : 0;
 
-  const videoPct = hasVideos ? Math.round((watchedVideoSeconds / totalVideoSeconds) * 100) : 100;
-  const colabPct = hasNotebooks ? Math.round((completedNotebooks / totalNb) * 100) : 100;
-  const paperPct = hasPapers ? Math.round((completedPapers / totalPpr) * 100) : 100;
-  const overallPercent = Math.round(videoPct * wVideo + colabPct * wColab + paperPct * wPaper);
+  const videoPct = hasVideos
+    ? Math.round((Math.min(watchedVideoSeconds, totalVideoSeconds) / totalVideoSeconds) * 100)
+    : 0;
+  const colabPct = hasNotebooks
+    ? Math.round((completedNotebooks / totalNb) * 100)
+    : 0;
+  const paperPct = hasPapers
+    ? Math.round((completedPapers / totalPpr) * 100)
+    : 0;
+  const overallPercent = Math.round(
+    videoPct * (hasVideos ? catWeight : 0) +
+    colabPct * (hasNotebooks ? catWeight : 0) +
+    paperPct * (hasPapers ? catWeight : 0)
+  );
 
   const total = totalChapters ?? 0;
   const weightedProgress = completedChapters + inProgressChapters * 0.5;
@@ -185,6 +194,6 @@ export async function GET() {
     videoPercent: videoPct,
     colabPercent: colabPct,
     paperPercent: paperPct,
-    weights: { video: wVideo, colab: wColab, paper: wPaper },
+    weights: { video: hasVideos ? catWeight : 0, colab: hasNotebooks ? catWeight : 0, paper: hasPapers ? catWeight : 0 },
   });
 }

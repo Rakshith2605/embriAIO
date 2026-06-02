@@ -63,10 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: { courseId: s
   };
 
   if (status === "in_progress") updates.started_at = now;
-  if (status === "completed") {
-    updates.completed_at = now;
-    updates.started_at = updates.started_at ?? now;
-  }
+  if (status === "completed") updates.completed_at = now;
 
   const { data, error } = await supabase
     .from("subscriber_progress")
@@ -213,7 +210,7 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
     });
   }
 
-  // Calculate weighted progress
+  // Calculate weighted progress — equal weight per active category
   const watchedVideoSeconds = (videoProg.data ?? []).reduce(
     (sum: number, v: { video_id: string; max_position_seconds: number }) => {
       const vData = (videos ?? []).find((vd: { id: string }) => vd.id === v.video_id);
@@ -224,22 +221,32 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
   const completedNotebooks = (nbProg.data ?? []).filter((n: { status: string }) => n.status === "completed").length;
   const completedPapers = (paperProg.data ?? []).filter((p: { status: string }) => p.status === "completed").length;
 
-  const videoPercent = totalVideoSeconds > 0
-    ? Math.round((watchedVideoSeconds / totalVideoSeconds) * 100)
-    : 100;
-  const colabPercent = allNotebookIds.length > 0
+  const hasVideos = totalVideoSeconds > 0;
+  const hasNotebooks = allNotebookIds.length > 0;
+  const hasPapers = allPaperIds.length > 0;
+
+  const activeCount = (hasVideos ? 1 : 0) + (hasNotebooks ? 1 : 0) + (hasPapers ? 1 : 0);
+  const catWeight = activeCount > 0 ? 1 / activeCount : 0;
+
+  const videoPercent = hasVideos
+    ? Math.round((Math.min(watchedVideoSeconds, totalVideoSeconds) / totalVideoSeconds) * 100)
+    : 0;
+  const colabPercent = hasNotebooks
     ? Math.round((completedNotebooks / allNotebookIds.length) * 100)
-    : 100;
-  const paperPercent = allPaperIds.length > 0
+    : 0;
+  const paperPercent = hasPapers
     ? Math.round((completedPapers / allPaperIds.length) * 100)
-    : 100;
+    : 0;
 
-  // Redistribute weights for missing categories
-  let wVideo = 0.80, wColab = 0.10, wPaper = 0.10;
-  if (allNotebookIds.length === 0) { wVideo += wColab; wColab = 0; }
-  if (allPaperIds.length === 0) { wVideo += wPaper; wPaper = 0; }
+  const overallPercent = Math.round(
+    videoPercent * (hasVideos ? catWeight : 0) +
+    colabPercent * (hasNotebooks ? catWeight : 0) +
+    paperPercent * (hasPapers ? catWeight : 0)
+  );
 
-  const overallPercent = Math.round(videoPercent * wVideo + colabPercent * wColab + paperPercent * wPaper);
+  const wVideo = hasVideos ? catWeight : 0;
+  const wColab = hasNotebooks ? catWeight : 0;
+  const wPaper = hasPapers ? catWeight : 0;
 
   const chaptersResourceProgress = (chapters ?? []).map((ch: { id: string }) => ({
     chapterId: ch.id,

@@ -208,9 +208,6 @@ async function deriveChapterStatus(
   }
   if (newStatus === "completed") {
     updates.completed_at = now;
-    if (newStatus === "completed") {
-      updates.started_at = updates.started_at ?? now;
-    }
   }
 
   await supabase

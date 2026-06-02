@@ -186,7 +186,6 @@ export async function POST(
   }
   if (newStatus === "completed") {
     progressUpdates.completed_at = now;
-    progressUpdates.started_at = progressUpdates.started_at ?? now;
   }
 
   await supabase
