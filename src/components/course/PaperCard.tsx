@@ -6,13 +6,14 @@ import { ExternalLink, BookOpen, Headphones, CheckCircle2, Circle } from "lucide
 interface Props {
   paperId: string;
   courseId: string;
+  chapterId?: string;
   title: string;
   url: string;
   description?: string;
   initialCompleted?: boolean;
 }
 
-export function PaperCard({ paperId, courseId, title, url, description, initialCompleted = false }: Props) {
+export function PaperCard({ paperId, courseId, chapterId, title, url, description, initialCompleted = false }: Props) {
   const [completed, setCompleted] = useState(initialCompleted);
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +28,10 @@ export function PaperCard({ paperId, courseId, title, url, description, initialC
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: newCompleted }),
       });
-      if (res.ok) setCompleted(newCompleted);
+      if (res.ok) {
+        setCompleted(newCompleted);
+        window.dispatchEvent(new CustomEvent("embra:progress-updated", { detail: { courseId, chapterId } }));
+      }
     } catch {
       // ignore
     } finally {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 
 interface Props {
@@ -13,6 +13,32 @@ interface Props {
 export function ChapterCompleteButton({ courseId, chapterId, isSubscribed, initialStatus }: Props) {
   const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
+
+  const fetchStatus = () => {
+    fetch(`/api/courses/${courseId}/progress`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.progress) {
+          const ch = data.progress.find(
+            (p: { chapter_id: string }) => p.chapter_id === chapterId
+          );
+          if (ch) setStatus(ch.status);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { courseId?: string; chapterId?: string };
+      if (!detail?.chapterId || detail.chapterId === chapterId) {
+        fetchStatus();
+      }
+    };
+    window.addEventListener("embra:progress-updated", handler);
+    return () => window.removeEventListener("embra:progress-updated", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, chapterId]);
 
   if (!isSubscribed) return null;
 
@@ -27,7 +53,14 @@ export function ChapterCompleteButton({ courseId, chapterId, isSubscribed, initi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chapter_id: chapterId, status: newStatus }),
       });
-      if (res.ok) setStatus(newStatus);
+      if (res.ok) {
+        setStatus(newStatus);
+        window.dispatchEvent(
+          new CustomEvent("embra:progress-updated", {
+            detail: { courseId, chapterId },
+          })
+        );
+      }
     } catch {
       // ignore
     } finally {

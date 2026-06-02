@@ -6,13 +6,14 @@ import { ExternalLink, FileCode, CheckCircle2, Circle } from "lucide-react";
 interface Props {
   notebookId: string;
   courseId: string;
+  chapterId?: string;
   title: string;
   colabUrl: string;
   description?: string;
   initialCompleted?: boolean;
 }
 
-export function ColabEmbed({ notebookId, courseId, title, colabUrl, description, initialCompleted = false }: Props) {
+export function ColabEmbed({ notebookId, courseId, chapterId, title, colabUrl, description, initialCompleted = false }: Props) {
   const [completed, setCompleted] = useState(initialCompleted);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,10 @@ export function ColabEmbed({ notebookId, courseId, title, colabUrl, description,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: newCompleted }),
       });
-      if (res.ok) setCompleted(newCompleted);
+      if (res.ok) {
+        setCompleted(newCompleted);
+        window.dispatchEvent(new CustomEvent("embra:progress-updated", { detail: { courseId, chapterId } }));
+      }
     } catch {
       // ignore
     } finally {

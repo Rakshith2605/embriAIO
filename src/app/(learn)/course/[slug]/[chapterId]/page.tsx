@@ -281,6 +281,7 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
                   key={n.id}
                   notebookId={n.id}
                   courseId={courseData.id}
+                  chapterId={params.chapterId}
                   title={n.title}
                   colabUrl={n.colab_url ?? ""}
                   description={n.description}
@@ -307,6 +308,7 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
                   key={p.id}
                   paperId={p.id}
                   courseId={courseData.id}
+                  chapterId={params.chapterId}
                   title={p.title}
                   url={p.url}
                   description={p.description}

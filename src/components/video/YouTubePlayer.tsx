@@ -71,6 +71,7 @@ export function YouTubePlayer({
   const completedFiredRef = useRef(false);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const resumeDataRef = useRef<{ currentTime: number; percentWatched: number } | null>(null);
+  const lastProgressEventRef = useRef(0);
 
   const {
     savePosition,
@@ -95,6 +96,15 @@ export function YouTubePlayer({
           maxPositionSeconds: currentTimeSeconds ?? 0,
         }),
       }).catch(() => {});
+      const now = Date.now();
+      if (now - lastProgressEventRef.current > 30000) {
+        lastProgressEventRef.current = now;
+        window.dispatchEvent(
+          new CustomEvent("embra:progress-updated", {
+            detail: { courseId, chapterId },
+          })
+        );
+      }
     },
     [courseId, dbVideoId, videoId, chapterId]
   );
