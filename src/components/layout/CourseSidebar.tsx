@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Video, FileCode, BookOpen } from "lucide-react";
+import { Video, FileCode, BookOpen, CheckCircle2, Clock } from "lucide-react";
 
 interface SidebarChapter {
   id: string;
@@ -14,7 +14,16 @@ interface SidebarChapter {
   paperCount: number;
 }
 
+interface ChapterResourceProgress {
+  chapterId: string;
+  chapterStatus: "not_started" | "in_progress" | "completed";
+  videos: { videoId: string; percentWatched: number }[];
+  notebooks: { notebookId: string; completed: boolean }[];
+  papers: { paperId: string; completed: boolean }[];
+}
+
 interface CourseSidebarData {
+  id: string;
   title: string;
   slug: string;
   accentColor: string | null;
@@ -31,6 +40,7 @@ export function CourseSidebar({ slug }: { slug: string }) {
   const pathname = usePathname();
   const [data, setData] = useState<CourseSidebarData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [progressMap, setProgressMap] = useState<Record<string, ChapterResourceProgress>>({});
 
   useEffect(() => {
     setLoading(true);
@@ -39,6 +49,23 @@ export function CourseSidebar({ slug }: { slug: string }) {
       .then((d: CourseSidebarData | null) => {
         setData(d);
         setLoading(false);
+        return d;
+      })
+      .then((d) => {
+        if (d?.id) {
+          fetch(`/api/courses/${d.id}/progress`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((p) => {
+              if (p?.chapters) {
+                const map: Record<string, ChapterResourceProgress> = {};
+                for (const ch of p.chapters) {
+                  map[ch.chapterId] = ch;
+                }
+                setProgressMap(map);
+              }
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => setLoading(false));
   }, [slug]);
@@ -61,7 +88,6 @@ export function CourseSidebar({ slug }: { slug: string }) {
 
   const accent = accentColors[data.accentColor ?? ""] ?? "#C0392B";
 
-  // Extract current chapterId from URL: /course/{slug}/{chapterId}
   const segments = pathname.split("/");
   const activeChapterId = segments.length >= 4 ? segments[3] : null;
 
@@ -86,6 +112,16 @@ export function CourseSidebar({ slug }: { slug: string }) {
 
       {data.chapters.map((ch, idx) => {
         const isActive = ch.id === activeChapterId;
+        const prog = progressMap[ch.id];
+        const status = prog?.chapterStatus ?? "not_started";
+
+        // Count completed resources
+        const completedVideos = prog?.videos?.filter((v) => v.percentWatched >= 90).length ?? 0;
+        const completedNotebooks = prog?.notebooks?.filter((n) => n.completed).length ?? 0;
+        const completedPapers = prog?.papers?.filter((p) => p.completed).length ?? 0;
+        const totalResources = ch.videoCount + ch.notebookCount + ch.paperCount;
+        const completedResources = completedVideos + completedNotebooks + completedPapers;
+
         return (
           <Link
             key={ch.id}
@@ -112,28 +148,40 @@ export function CourseSidebar({ slug }: { slug: string }) {
               >
                 {ch.title}
               </p>
-              {(ch.videoCount > 0 || ch.notebookCount > 0 || ch.paperCount > 0) && (
-                <div
-                  className="flex gap-2 mt-0.5 font-jetbrains text-[8px] uppercase tracking-wider"
-                  style={{ color: "#A08E6B" }}
-                >
-                  {ch.videoCount > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      <Video className="h-2.5 w-2.5" /> {ch.videoCount}
-                    </span>
-                  )}
-                  {ch.notebookCount > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      <FileCode className="h-2.5 w-2.5" /> {ch.notebookCount}
-                    </span>
-                  )}
-                  {ch.paperCount > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      <BookOpen className="h-2.5 w-2.5" /> {ch.paperCount}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center gap-2 mt-0.5">
+                {(ch.videoCount > 0 || ch.notebookCount > 0 || ch.paperCount > 0) && (
+                  <div
+                    className="flex gap-2 font-jetbrains text-[8px] uppercase tracking-wider"
+                    style={{ color: "#A08E6B" }}
+                  >
+                    {ch.videoCount > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <Video className="h-2.5 w-2.5" /> {ch.videoCount}
+                      </span>
+                    )}
+                    {ch.notebookCount > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <FileCode className="h-2.5 w-2.5" /> {ch.notebookCount}
+                      </span>
+                    )}
+                    {ch.paperCount > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <BookOpen className="h-2.5 w-2.5" /> {ch.paperCount}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {totalResources > 0 && status !== "not_started" && (
+                  <span className="flex items-center gap-1 font-jetbrains text-[8px]" style={{ color: status === "completed" ? "#059669" : "#CA8A04" }}>
+                    {status === "completed" ? (
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                    ) : (
+                      <Clock className="h-2.5 w-2.5" />
+                    )}
+                    {completedResources}/{totalResources}
+                  </span>
+                )}
+              </div>
             </div>
           </Link>
         );

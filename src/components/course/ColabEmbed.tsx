@@ -1,20 +1,43 @@
 "use client";
 
-import { ExternalLink, FileCode } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, FileCode, CheckCircle2, Circle } from "lucide-react";
 
 interface Props {
+  notebookId: string;
+  courseId: string;
   title: string;
   colabUrl: string;
   description?: string;
+  initialCompleted?: boolean;
 }
 
-export function ColabEmbed({ title, colabUrl, description }: Props) {
+export function ColabEmbed({ notebookId, courseId, title, colabUrl, description, initialCompleted = false }: Props) {
+  const [completed, setCompleted] = useState(initialCompleted);
+  const [loading, setLoading] = useState(false);
+
+  async function toggleComplete() {
+    setLoading(true);
+    const newCompleted = !completed;
+    try {
+      const res = await fetch(`/api/courses/${courseId}/notebooks/${notebookId}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: newCompleted }),
+      });
+      if (res.ok) setCompleted(newCompleted);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div
       style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}
       className="p-4 flex items-start gap-4 group hover:shadow-sm transition-shadow"
     >
-      {/* Colab icon area */}
       <div
         className="shrink-0 flex items-center justify-center w-10 h-10"
         style={{ background: "#F4E8C1", border: "1px solid #C8B882" }}
@@ -37,17 +60,43 @@ export function ColabEmbed({ title, colabUrl, description }: Props) {
             {description}
           </p>
         )}
-        <a
-          href={colabUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 font-jetbrains text-[11px] tracking-wide uppercase"
-          style={{ color: "#C0392B" }}
-        >
-          Open in Google Colab
-          <ExternalLink className="h-3 w-3" />
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href={colabUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 font-jetbrains text-[11px] tracking-wide uppercase"
+            style={{ color: "#C0392B" }}
+          >
+            Open in Google Colab
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
       </div>
+
+      <button
+        onClick={toggleComplete}
+        disabled={loading}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 font-jetbrains text-[10px] uppercase tracking-wider shrink-0 transition-colors disabled:opacity-50"
+        style={{
+          border: `1px solid ${completed ? "#059669" : "#C8B882"}`,
+          background: completed ? "#E8F5E9" : "transparent",
+          color: completed ? "#059669" : "#5C4E35",
+        }}
+        title={completed ? "Mark as incomplete" : "Mark complete"}
+      >
+        {completed ? (
+          <>
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Done
+          </>
+        ) : (
+          <>
+            <Circle className="h-3.5 w-3.5" />
+            Mark Complete
+          </>
+        )}
+      </button>
     </div>
   );
 }

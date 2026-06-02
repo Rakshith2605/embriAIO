@@ -42,10 +42,11 @@ export function CourseVideoSection({ videos, chapterId, courseId }: Props) {
                   style={{ border: "1px solid #C8B882" }}
                 >
                   <YouTubePlayer
-                    videoId={v.youtube_id}
+                    videoId={v.youtube_id ?? ""}
                     title={v.title}
                     chapterId={chapterId}
                     courseId={courseId}
+                    dbVideoId={v.id}
                   />
                 </div>
               </div>

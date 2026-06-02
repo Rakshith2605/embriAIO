@@ -97,8 +97,21 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
   const totalNotebooks = chapters.reduce((s: number, ch: { chapter_notebooks: unknown[] }) => s + (ch.chapter_notebooks?.length ?? 0), 0);
   const totalPapers = chapters.reduce((s: number, ch: { chapter_papers: unknown[] }) => s + (ch.chapter_papers?.length ?? 0), 0);
 
-  // Get subscriber's chapter progress
+  // Get subscriber's chapter progress with weighted formula
   let chapterProgressMap: Record<string, string> = {};
+  let weightedProgress: {
+    totalVideoSeconds: number;
+    watchedVideoSeconds: number;
+    totalNotebooks: number;
+    completedNotebooks: number;
+    totalPapers: number;
+    completedPapers: number;
+    videoPercent: number;
+    colabPercent: number;
+    paperPercent: number;
+    overallPercent: number;
+    weights: { video: number; colab: number; paper: number };
+  } | null = null;
   if (userId) {
     const { data: subscription } = await supabase
       .from("course_subscriptions")
@@ -114,6 +127,74 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
       for (const p of progress ?? []) {
         chapterProgressMap[p.chapter_id] = p.status;
       }
+
+      // Fetch weighted progress via API endpoint
+      // We do it inline here for server-side rendering
+      const totalVideoSeconds = course.total_video_seconds ?? 0;
+      
+      // Get all video progress
+      const chapterIds = chapters.map((ch: { id: string }) => ch.id);
+      const allVideoIds = chapterIds.length > 0
+        ? ((await supabase.from("chapter_videos").select("id, chapter_id, duration_seconds").in("chapter_id", chapterIds)).data) ?? []
+        : [];
+      const allNbIds = chapterIds.length > 0
+        ? ((await supabase.from("chapter_notebooks").select("id, chapter_id").in("chapter_id", chapterIds)).data) ?? []
+        : [];
+      const allPaperIds = chapterIds.length > 0
+        ? ((await supabase.from("chapter_papers").select("id, chapter_id").in("chapter_id", chapterIds)).data) ?? []
+        : [];
+
+      const videoIdList = (allVideoIds as { id: string }[]).map((v) => v.id);
+      const nbIdList = (allNbIds as { id: string }[]).map((n) => n.id);
+      const paperIdList = (allPaperIds as { id: string }[]).map((p) => p.id);
+
+      const [vidProg, nbProg, paperProg] = await Promise.all([
+        videoIdList.length > 0
+          ? supabase.from("subscriber_video_progress").select("video_id, max_position_seconds, percent_watched").eq("subscription_id", subscription.id).in("video_id", videoIdList)
+          : Promise.resolve({ data: [] }),
+        nbIdList.length > 0
+          ? supabase.from("subscriber_notebook_progress").select("notebook_id, status").eq("subscription_id", subscription.id).in("notebook_id", nbIdList)
+          : Promise.resolve({ data: [] }),
+        paperIdList.length > 0
+          ? supabase.from("subscriber_paper_progress").select("paper_id, status").eq("subscription_id", subscription.id).in("paper_id", paperIdList)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      const durationMap = new Map((allVideoIds as { id: string; duration_seconds: number | null }[]).map((v) => [v.id, v.duration_seconds]));
+      const watchedSeconds = (vidProg.data ?? []).reduce((sum: number, v: { video_id: string; max_position_seconds: number }) => {
+        const dur = durationMap.get(v.video_id);
+        return sum + Math.min(v.max_position_seconds, dur ?? v.max_position_seconds);
+      }, 0);
+
+      const completedNbs = (nbProg.data ?? []).filter((n: { status: string }) => n.status === "completed").length;
+      const completedPapers = (paperProg.data ?? []).filter((p: { status: string }) => p.status === "completed").length;
+
+      const hasVideos = totalVideoSeconds > 0;
+      const hasNotebooks = nbIdList.length > 0;
+      const hasPapers = paperIdList.length > 0;
+
+      let wVideo = 0.80, wColab = 0.10, wPaper = 0.10;
+      if (!hasNotebooks) { wVideo += wColab; wColab = 0; }
+      if (!hasPapers) { wVideo += wPaper; wPaper = 0; }
+
+      const videoPct = hasVideos ? Math.round((watchedSeconds / totalVideoSeconds) * 100) : 100;
+      const colabPct = hasNotebooks ? Math.round((completedNbs / nbIdList.length) * 100) : 100;
+      const paperPct = hasPapers ? Math.round((completedPapers / paperIdList.length) * 100) : 100;
+      const overallPct = Math.round(videoPct * wVideo + colabPct * wColab + paperPct * wPaper);
+
+      weightedProgress = {
+        totalVideoSeconds,
+        watchedVideoSeconds: watchedSeconds,
+        totalNotebooks: nbIdList.length,
+        completedNotebooks: completedNbs,
+        totalPapers: paperIdList.length,
+        completedPapers,
+        videoPercent: videoPct,
+        colabPercent: colabPct,
+        paperPercent: paperPct,
+        overallPercent: overallPct,
+        weights: { video: wVideo, colab: wColab, paper: wPaper },
+      };
     }
   }
 
@@ -236,32 +317,55 @@ export default async function CourseOverviewPage({ params }: { params: { slug: s
           <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
         </div>
 
-        {/* Course progress bar */}
-        {Object.keys(chapterProgressMap).length > 0 && (() => {
-          const total = chapters.length;
-          const completed = Object.values(chapterProgressMap).filter(s => s === "completed").length;
-          const inProg = Object.values(chapterProgressMap).filter(s => s === "in_progress").length;
-          const weightedProgress = completed + inProg * 0.5;
-          const pct = total > 0 ? Math.round((weightedProgress / total) * 100) : 0;
-          return (
-            <div className="mb-4 p-3" style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: "#5C4E35" }}>
-                  {completed}/{total} chapters completed{inProg > 0 ? ` · ${inProg} in progress` : ""}
-                </span>
-                <span className="font-jetbrains text-[11px] font-bold" style={{ color: pct === 100 ? "#059669" : "#C0392B" }}>
-                  {pct}%
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5DCC8" }}>
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, background: pct === 100 ? "#059669" : "#C0392B" }}
-                />
+        {/* Course progress bar with weighted breakdown */}
+        {weightedProgress && (
+          <div className="mb-4 p-3" style={{ background: "#FFFDF5", border: "1px solid #C8B882" }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-jetbrains text-[10px] uppercase tracking-wider" style={{ color: "#5C4E35" }}>
+                {weightedProgress.overallPercent}% complete
+              </span>
+              <span className="font-jetbrains text-[11px] font-bold" style={{ color: weightedProgress.overallPercent === 100 ? "#059669" : "#C0392B" }}>
+                {weightedProgress.overallPercent}%
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5DCC8" }}>
+              <div
+                className="h-full rounded-full transition-all flex"
+                style={{ width: `${weightedProgress.overallPercent}%` }}
+              >
+                {weightedProgress.weights.video > 0 && (
+                  <div style={{ width: `${(weightedProgress.videoPercent / 100) * weightedProgress.weights.video * 100 / weightedProgress.overallPercent}%`, background: "#2563EB", height: "100%" }} />
+                )}
+                {weightedProgress.weights.colab > 0 && (
+                  <div style={{ width: `${(weightedProgress.colabPercent / 100) * weightedProgress.weights.colab * 100 / weightedProgress.overallPercent}%`, background: "#CA8A04", height: "100%" }} />
+                )}
+                {weightedProgress.weights.paper > 0 && (
+                  <div style={{ width: `${(weightedProgress.paperPercent / 100) * weightedProgress.weights.paper * 100 / weightedProgress.overallPercent}%`, background: "#059669", height: "100%" }} />
+                )}
               </div>
             </div>
-          );
-        })()}
+            <div className="flex gap-3 mt-2 font-jetbrains text-[9px]" style={{ color: "#8B7355" }}>
+              {weightedProgress.weights.video > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#2563EB" }} />
+                  Video {weightedProgress.videoPercent}% ({Math.round(weightedProgress.watchedVideoSeconds / 60)}m)
+                </span>
+              )}
+              {weightedProgress.weights.colab > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#CA8A04" }} />
+                  Colab {weightedProgress.colabPercent}%
+                </span>
+              )}
+              {weightedProgress.weights.paper > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#059669" }} />
+                  Papers {weightedProgress.paperPercent}%
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {chapters.map((ch: { id: string; title: string; description?: string; order: number; chapter_videos: unknown[]; chapter_notebooks: unknown[]; chapter_papers: unknown[] }, idx: number) => {
           const chProgress = chapterProgressMap[ch.id];

@@ -168,6 +168,69 @@ export interface PaperFormData {
   description: string;
 }
 
+/* ───── Resource progress types ───────────────────────── */
+
+export interface VideoProgressRecord {
+  id: string;
+  subscription_id: string;
+  video_id: string;
+  max_position_seconds: number;
+  percent_watched: number;
+  updated_at: string;
+}
+
+export interface NotebookProgressRecord {
+  id: string;
+  subscription_id: string;
+  notebook_id: string;
+  status: "not_started" | "completed";
+  completed_at: string | null;
+  updated_at: string;
+}
+
+export interface PaperProgressRecord {
+  id: string;
+  subscription_id: string;
+  paper_id: string;
+  status: "not_started" | "completed";
+  completed_at: string | null;
+  updated_at: string;
+}
+
+export interface ChapterResourceProgress {
+  chapterId: string;
+  chapterStatus: "not_started" | "in_progress" | "completed";
+  videos: {
+    videoId: string;
+    maxPositionSeconds: number;
+    percentWatched: number;
+    durationSeconds: number | null;
+  }[];
+  notebooks: {
+    notebookId: string;
+    completed: boolean;
+  }[];
+  papers: {
+    paperId: string;
+    completed: boolean;
+  }[];
+}
+
+export interface CourseWeightedProgress {
+  courseId: string;
+  totalVideoSeconds: number;
+  watchedVideoSeconds: number;
+  totalNotebooks: number;
+  completedNotebooks: number;
+  totalPapers: number;
+  completedPapers: number;
+  videoPercent: number;
+  colabPercent: number;
+  paperPercent: number;
+  overallPercent: number;
+  chapters: ChapterResourceProgress[];
+}
+
 /* ───── Access request types ─────────────────────────── */
 
 export type AccessRequestStatus = "pending" | "approved" | "denied";
@@ -180,5 +243,5 @@ export interface AccessRequest {
   message: string;
   created_at: string;
   reviewed_at: string | null;
-  requester?: Pick<Profile, "name" | "image" | "email">;
+  reviewer?: Pick<Profile, "name" | "image" | "email">;
 }

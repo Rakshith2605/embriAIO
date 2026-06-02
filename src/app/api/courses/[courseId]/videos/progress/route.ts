@@ -24,7 +24,6 @@ export async function POST(
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  // Verify subscription exists
   const { data: subscription } = await supabase
     .from("course_subscriptions")
     .select("id")
@@ -40,7 +39,7 @@ export async function POST(
   }
 
   const body = await req.json();
-  const { videoId, percentWatched, chapterId } = body;
+  const { videoId, percentWatched, chapterId, maxPositionSeconds } = body;
 
   if (!videoId || percentWatched === undefined || !chapterId) {
     return NextResponse.json(
@@ -71,79 +70,128 @@ export async function POST(
     );
   }
 
-  // Get all videos in this chapter
-  const { data: videos, error: videosError } = await supabase
+  // Verify video belongs to this chapter (supports both UUID and youtube ID)
+  const { data: videos } = await supabase
     .from("chapter_videos")
-    .select("id")
+    .select("id, youtube_id, duration_seconds")
     .eq("chapter_id", chapterId);
 
-  if (videosError) {
-    return NextResponse.json(
-      { error: "Failed to fetch chapter videos" },
-      { status: 500 }
-    );
-  }
+  const videoList = videos ?? [];
+  const matchedVideo = videoList.find(
+    (v) => v.id === videoId || v.youtube_id === videoId
+  );
 
-  const videoIds = (videos ?? []).map((v) => v.id);
-  if (!videoIds.includes(videoId)) {
+  if (!matchedVideo) {
     return NextResponse.json(
       { error: "Video not found in this chapter" },
       { status: 404 }
     );
   }
 
-  const now = new Date().toISOString();
+  const resolvedVideoId = matchedVideo.id;
+  const maxPos = Math.max(0, Math.round(maxPositionSeconds ?? 0));
 
-  // Get current progress for this chapter
-  const { data: currentProgress } = await supabase
-    .from("subscriber_progress")
-    .select("status")
-    .eq("subscription_id", subscription.id)
-    .eq("chapter_id", chapterId)
-    .single();
+  // Upsert per-video progress
+  await supabase
+    .from("subscriber_video_progress")
+    .upsert(
+      {
+        subscription_id: subscription.id,
+        video_id: resolvedVideoId,
+        max_position_seconds: maxPos,
+        percent_watched: Math.min(100, Math.max(0, Math.round(percentWatched))),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "subscription_id,video_id" }
+    );
 
-  let newStatus = currentProgress?.status ?? "not_started";
+  // Auto-derive chapter status from resource progress
+  const allVideoIds = videoList.map((v) => v.id);
+  const { data: chapterNotebooks } = await supabase
+    .from("chapter_notebooks")
+    .select("id")
+    .eq("chapter_id", chapterId);
+  const notebookIds = (chapterNotebooks ?? []).map((n) => n.id);
 
-  if (percentWatched > 0 && newStatus === "not_started") {
-    newStatus = "in_progress";
-  }
+  const { data: chapterPapers } = await supabase
+    .from("chapter_papers")
+    .select("id")
+    .eq("chapter_id", chapterId);
+  const paperIds = (chapterPapers ?? []).map((p) => p.id);
 
-  // Auto-complete: if this video is ≥90% and it's the only video, mark chapter as completed
-  if (percentWatched >= 90) {
-    if (videoIds.length === 1) {
-      newStatus = "completed";
-    } else if (newStatus === "not_started") {
-      newStatus = "in_progress";
+  const totalResources = allVideoIds.length + notebookIds.length + paperIds.length;
+  let completedResources = 0;
+  let startedResources = 0;
+
+  // Check all video progress for this chapter
+  if (allVideoIds.length > 0) {
+    const { data: vp } = await supabase
+      .from("subscriber_video_progress")
+      .select("video_id, percent_watched")
+      .eq("subscription_id", subscription.id)
+      .in("video_id", allVideoIds);
+    const vMap = new Map((vp ?? []).map((x) => [x.video_id, x.percent_watched]));
+    for (const vid of allVideoIds) {
+      const pct = vMap.get(vid) ?? 0;
+      if (pct >= 90) completedResources++;
+      if (pct > 0) startedResources++;
     }
   }
 
-  const updates: Record<string, unknown> = {
+  if (notebookIds.length > 0) {
+    const { data: np } = await supabase
+      .from("subscriber_notebook_progress")
+      .select("notebook_id, status")
+      .eq("subscription_id", subscription.id)
+      .in("notebook_id", notebookIds);
+    const nbMap = new Map((np ?? []).map((x) => [x.notebook_id, x.status]));
+    for (const nid of notebookIds) {
+      if (nbMap.get(nid) === "completed") completedResources++;
+      if (nbMap.has(nid)) startedResources++;
+    }
+  }
+
+  if (paperIds.length > 0) {
+    const { data: pp } = await supabase
+      .from("subscriber_paper_progress")
+      .select("paper_id, status")
+      .eq("subscription_id", subscription.id)
+      .in("paper_id", paperIds);
+    const pMap = new Map((pp ?? []).map((x) => [x.paper_id, x.status]));
+    for (const pid of paperIds) {
+      if (pMap.get(pid) === "completed") completedResources++;
+      if (pMap.has(pid)) startedResources++;
+    }
+  }
+
+  let newStatus: string;
+  if (totalResources > 0 && completedResources >= totalResources) {
+    newStatus = "completed";
+  } else if (startedResources > 0) {
+    newStatus = "in_progress";
+  } else {
+    newStatus = "not_started";
+  }
+
+  const now = new Date().toISOString();
+  const progressUpdates: Record<string, unknown> = {
     subscription_id: subscription.id,
     chapter_id: chapterId,
     status: newStatus,
     updated_at: now,
   };
 
-  if (newStatus === "in_progress" && !currentProgress?.status) {
-    updates.started_at = now;
+  if (newStatus === "in_progress") {
+    progressUpdates.started_at = now;
   }
-
   if (newStatus === "completed") {
-    updates.completed_at = now;
-    if (!currentProgress?.status) {
-      updates.started_at = now;
-    }
+    progressUpdates.completed_at = now;
+    progressUpdates.started_at = progressUpdates.started_at ?? now;
   }
 
-  const { error: upsertError } = await supabase
+  await supabase
     .from("subscriber_progress")
-    .upsert(updates, { onConflict: "subscription_id,chapter_id" })
-    .select()
-    .single();
-
-  if (upsertError) {
-    return NextResponse.json({ error: upsertError.message }, { status: 500 });
-  }
+    .upsert(progressUpdates, { onConflict: "subscription_id,chapter_id" });
 
   return NextResponse.json({ ok: true });
 }

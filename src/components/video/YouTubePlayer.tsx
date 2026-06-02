@@ -12,6 +12,7 @@ interface Props {
   title: string;
   chapterId: ChapterId;
   courseId?: string;
+  dbVideoId?: string;
   onComplete?: () => void;
   compact?: boolean;
   className?: string;
@@ -57,6 +58,7 @@ export function YouTubePlayer({
   title,
   chapterId,
   courseId,
+  dbVideoId,
   onComplete,
   compact = false,
   className,
@@ -81,19 +83,20 @@ export function YouTubePlayer({
   const percentWatched = savedProgress?.percentWatched ?? 0;
 
   const syncProgressToCourse = useCallback(
-    (currentPercent: number) => {
+    (currentPercent: number, currentTimeSeconds?: number) => {
       if (!courseId) return;
       fetch(`/api/courses/${courseId}/videos/progress`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          videoId,
+          videoId: dbVideoId ?? videoId,
           percentWatched: currentPercent,
           chapterId,
+          maxPositionSeconds: currentTimeSeconds ?? 0,
         }),
-      }).catch(() => {}); // fail silently
+      }).catch(() => {});
     },
-    [courseId, videoId, chapterId]
+    [courseId, dbVideoId, videoId, chapterId]
   );
 
   const flushProgress = useCallback(() => {
@@ -105,7 +108,7 @@ export function YouTubePlayer({
         const pct = (currentTime / duration) * 100;
         const roundedPct = Math.round(pct * 100) / 100;
         savePosition(currentTime, duration, roundedPct);
-        syncProgressToCourse(roundedPct);
+        syncProgressToCourse(roundedPct, Math.round(currentTime));
       }
     } catch {
       // Player might be in a bad state
@@ -126,7 +129,7 @@ export function YouTubePlayer({
         const pct = Math.round((currentTime / duration) * 10000) / 100;
 
         savePosition(currentTime, duration, pct);
-        syncProgressToCourse(pct);
+        syncProgressToCourse(pct, Math.round(currentTime));
 
         if (pct >= 90 && !completedFiredRef.current) {
           completedFiredRef.current = true;

@@ -126,6 +126,43 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
     (a: { order: number }, b: { order: number }) => a.order - b.order
   );
 
+  // Get resource-level progress for subscribed users
+  let notebookProgressMap: Record<string, boolean> = {};
+  let paperProgressMap: Record<string, boolean> = {};
+  if (isSubscribed) {
+    const { data: subForProgress } = await supabase
+      .from("course_subscriptions")
+      .select("id")
+      .eq("course_id", courseData.id)
+      .eq("subscriber_id", userId)
+      .single();
+
+    if (subForProgress) {
+      if (notebooks.length > 0) {
+        const nbIds = notebooks.map((n: { id: string }) => n.id);
+        const { data: nbProg } = await supabase
+          .from("subscriber_notebook_progress")
+          .select("notebook_id, status")
+          .eq("subscription_id", subForProgress.id)
+          .in("notebook_id", nbIds);
+        for (const np of nbProg ?? []) {
+          notebookProgressMap[np.notebook_id] = np.status === "completed";
+        }
+      }
+      if (papers.length > 0) {
+        const pIds = papers.map((p: { id: string }) => p.id);
+        const { data: pProg } = await supabase
+          .from("subscriber_paper_progress")
+          .select("paper_id, status")
+          .eq("subscription_id", subForProgress.id)
+          .in("paper_id", pIds);
+        for (const pp of pProg ?? []) {
+          paperProgressMap[pp.paper_id] = pp.status === "completed";
+        }
+      }
+    }
+  }
+
   return (
     <div>
       {/* Auto-track chapter as in_progress */}
@@ -242,9 +279,12 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
               return (
                 <ColabEmbed
                   key={n.id}
+                  notebookId={n.id}
+                  courseId={courseData.id}
                   title={n.title}
                   colabUrl={n.colab_url ?? ""}
                   description={n.description}
+                  initialCompleted={notebookProgressMap[n.id] ?? false}
                 />
               );
             })}
@@ -262,14 +302,17 @@ export default async function ChapterViewPage({ params }: { params: { slug: stri
             <div className="flex-1 h-px" style={{ background: "#C8B882", opacity: 0.5 }} />
           </div>
           <div className="space-y-3">
-            {papers.map((p: { id: string; title: string; url: string; description?: string }) => (
-              <PaperCard
-                key={p.id}
-                title={p.title}
-                url={p.url}
-                description={p.description}
-              />
-            ))}
+{papers.map((p: { id: string; title: string; url: string; description?: string }) => (
+                <PaperCard
+                  key={p.id}
+                  paperId={p.id}
+                  courseId={courseData.id}
+                  title={p.title}
+                  url={p.url}
+                  description={p.description}
+                  initialCompleted={paperProgressMap[p.id] ?? false}
+                />
+              ))}
           </div>
         </section>
       )}

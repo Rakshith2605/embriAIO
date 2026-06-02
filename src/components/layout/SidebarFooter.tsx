@@ -13,6 +13,16 @@ interface CourseProgress {
   inProgressChapters: number;
   percentComplete: number;
   courseCount: number;
+  totalVideoSeconds: number;
+  watchedVideoSeconds: number;
+  totalNotebooks: number;
+  completedNotebooks: number;
+  totalPapers: number;
+  completedPapers: number;
+  videoPercent: number;
+  colabPercent: number;
+  paperPercent: number;
+  weights: { video: number; colab: number; paper: number };
 }
 
 export function SidebarFooter() {
@@ -48,13 +58,11 @@ export function SidebarFooter() {
     : (isCourseRoute && courseProgress && courseProgress.totalChapters > 0
         ? (() => {
             const parts: string[] = [];
-            if (courseProgress.completedChapters > 0) {
-              parts.push(`${courseProgress.completedChapters}/${courseProgress.totalChapters} chapter${courseProgress.totalChapters !== 1 ? "s" : ""} completed`);
-            }
-            if (courseProgress.inProgressChapters > 0) {
-              parts.push(`${courseProgress.inProgressChapters} in progress`);
-            }
-            return parts.length > 0 ? parts.join(" · ") : "No chapters started yet";
+            const wp = courseProgress as CourseProgress;
+            if (wp.weights?.video > 0) parts.push(`Video ${wp.videoPercent}%`);
+            if (wp.weights?.colab > 0) parts.push(`Colab ${wp.colabPercent}%`);
+            if (wp.weights?.paper > 0) parts.push(`Papers ${wp.paperPercent}%`);
+            return parts.length > 0 ? parts.join(" · ") : `${courseProgress.completedChapters}/${courseProgress.totalChapters} chapters`;
           })()
         : null);
 

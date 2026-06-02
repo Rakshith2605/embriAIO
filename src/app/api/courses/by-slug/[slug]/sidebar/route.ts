@@ -49,6 +49,7 @@ export async function GET(
     );
 
   return NextResponse.json({
+    id: course.id,
     title: course.title,
     slug: course.slug,
     accentColor: course.accent_color,
