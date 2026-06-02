@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, FileCode, CheckCircle2, Circle } from "lucide-react";
+import { ExternalLink, FileCode, CheckCircle2, Circle, AlertCircle } from "lucide-react";
 
 interface Props {
   notebookId: string;
@@ -16,22 +16,33 @@ interface Props {
 export function ColabEmbed({ notebookId, courseId, chapterId, title, colabUrl, description, initialCompleted = false }: Props) {
   const [completed, setCompleted] = useState(initialCompleted);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function toggleComplete() {
     setLoading(true);
+    setError(null);
     const newCompleted = !completed;
+
     try {
       const res = await fetch(`/api/courses/${courseId}/notebooks/${notebookId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: newCompleted }),
       });
+
       if (res.ok) {
         setCompleted(newCompleted);
-        window.dispatchEvent(new CustomEvent("embra:progress-updated", { detail: { courseId, chapterId } }));
+        window.dispatchEvent(
+          new CustomEvent("embra:progress-updated", { detail: { courseId, chapterId } })
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ?? `Error ${res.status}`);
+        console.error("[ColabEmbed] API error:", res.status, data);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(String(err));
+      console.error("[ColabEmbed] Network error:", err);
     } finally {
       setLoading(false);
     }
@@ -62,6 +73,15 @@ export function ColabEmbed({ notebookId, courseId, chapterId, title, colabUrl, d
             style={{ color: "#5C4E35" }}
           >
             {description}
+          </p>
+        )}
+        {error && (
+          <p
+            className="font-jetbrains text-[10px] mb-1 flex items-center gap-1"
+            style={{ color: "#C0392B" }}
+          >
+            <AlertCircle className="h-3 w-3" />
+            {error}
           </p>
         )}
         <div className="flex items-center gap-3">

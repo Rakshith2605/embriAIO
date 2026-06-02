@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, BookOpen, Headphones, CheckCircle2, Circle } from "lucide-react";
+import { ExternalLink, BookOpen, Headphones, CheckCircle2, Circle, AlertCircle } from "lucide-react";
 
 interface Props {
   paperId: string;
@@ -16,24 +16,35 @@ interface Props {
 export function PaperCard({ paperId, courseId, chapterId, title, url, description, initialCompleted = false }: Props) {
   const [completed, setCompleted] = useState(initialCompleted);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const notebookLmUrl = `https://notebooklm.google.com/notebook/new?pli=1&sourceUrl=${encodeURIComponent(url)}`;
 
   async function toggleRead() {
     setLoading(true);
+    setError(null);
     const newCompleted = !completed;
+
     try {
       const res = await fetch(`/api/courses/${courseId}/papers/${paperId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: newCompleted }),
       });
+
       if (res.ok) {
         setCompleted(newCompleted);
-        window.dispatchEvent(new CustomEvent("embra:progress-updated", { detail: { courseId, chapterId } }));
+        window.dispatchEvent(
+          new CustomEvent("embra:progress-updated", { detail: { courseId, chapterId } })
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ?? `Error ${res.status}`);
+        console.error("[PaperCard] API error:", res.status, data);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(String(err));
+      console.error("[PaperCard] Network error:", err);
     } finally {
       setLoading(false);
     }
@@ -64,6 +75,15 @@ export function PaperCard({ paperId, courseId, chapterId, title, url, descriptio
             style={{ color: "#5C4E35" }}
           >
             {description}
+          </p>
+        )}
+        {error && (
+          <p
+            className="font-jetbrains text-[10px] mb-1 flex items-center gap-1"
+            style={{ color: "#C0392B" }}
+          >
+            <AlertCircle className="h-3 w-3" />
+            {error}
           </p>
         )}
         <div className="flex items-center gap-4 flex-wrap">
