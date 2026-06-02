@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 interface WeightedProgress {
   totalVideoSeconds: number;
   watchedVideoSeconds: number;
+  totalVideoCount: number;
+  completedVideos: number;
   totalNotebooks: number;
   completedNotebooks: number;
   totalPapers: number;
@@ -90,7 +92,10 @@ export function CourseProgressBar({ courseId, hasSubscription }: Props) {
         {progress.weights.video > 0 && (
           <span className="flex items-center gap-1">
             <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#2563EB" }} />
-            Video {progress.videoPercent}% ({Math.round(progress.watchedVideoSeconds / 60)}m of {Math.round(progress.totalVideoSeconds / 60)}m)
+            Video {progress.completedVideos ?? 0}/{progress.totalVideoCount ?? 0} ({progress.videoPercent}%)
+            {progress.totalVideoSeconds > 0 && (
+              <> · {Math.round(progress.watchedVideoSeconds / 60)}m of {Math.round(progress.totalVideoSeconds / 60)}m</>
+            )}
           </span>
         )}
         {progress.weights.colab > 0 && (

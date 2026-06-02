@@ -84,7 +84,7 @@ export function YouTubePlayer({
   const percentWatched = savedProgress?.percentWatched ?? 0;
 
   const syncProgressToCourse = useCallback(
-    (currentPercent: number, currentTimeSeconds?: number) => {
+    (currentPercent: number, currentTimeSeconds?: number, durationSeconds?: number, force = false) => {
       if (!courseId) return;
       fetch(`/api/courses/${courseId}/videos/progress`, {
         method: "POST",
@@ -94,10 +94,11 @@ export function YouTubePlayer({
           percentWatched: currentPercent,
           chapterId,
           maxPositionSeconds: currentTimeSeconds ?? 0,
+          durationSeconds: durationSeconds ? Math.round(durationSeconds) : undefined,
         }),
       }).catch(() => {});
       const now = Date.now();
-      if (now - lastProgressEventRef.current > 30000) {
+      if (force || now - lastProgressEventRef.current > 30000) {
         lastProgressEventRef.current = now;
         window.dispatchEvent(
           new CustomEvent("embra:progress-updated", {
@@ -118,7 +119,7 @@ export function YouTubePlayer({
         const pct = (currentTime / duration) * 100;
         const roundedPct = Math.round(pct * 100) / 100;
         savePosition(currentTime, duration, roundedPct);
-        syncProgressToCourse(roundedPct, Math.round(currentTime));
+        syncProgressToCourse(roundedPct, Math.round(currentTime), duration, true);
       }
     } catch {
       // Player might be in a bad state
@@ -139,7 +140,7 @@ export function YouTubePlayer({
         const pct = Math.round((currentTime / duration) * 10000) / 100;
 
         savePosition(currentTime, duration, pct);
-        syncProgressToCourse(pct, Math.round(currentTime));
+        syncProgressToCourse(pct, Math.round(currentTime), duration);
 
         if (pct >= 90 && !completedFiredRef.current) {
           completedFiredRef.current = true;

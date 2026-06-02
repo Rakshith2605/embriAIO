@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createServiceClient } from "@/lib/supabase";
+import { deriveChapterStatus } from "@/lib/progress";
 
 export async function POST(req: NextRequest, { params }: { params: { courseId: string } }) {
   const session = await auth();
@@ -54,6 +55,13 @@ export async function POST(req: NextRequest, { params }: { params: { courseId: s
     return NextResponse.json({ error: "Chapter not found in this course" }, { status: 404 });
   }
 
+  const { data: existing } = await supabase
+    .from("subscriber_progress")
+    .select("started_at")
+    .eq("subscription_id", subscription.id)
+    .eq("chapter_id", chapter_id)
+    .maybeSingle();
+
   const now = new Date().toISOString();
   const updates: Record<string, unknown> = {
     subscription_id: subscription.id,
@@ -62,7 +70,9 @@ export async function POST(req: NextRequest, { params }: { params: { courseId: s
     updated_at: now,
   };
 
-  if (status === "in_progress") updates.started_at = now;
+  if ((status === "in_progress" || status === "completed") && !existing?.started_at) {
+    updates.started_at = now;
+  }
   if (status === "completed") updates.completed_at = now;
   if (status !== "completed") updates.completed_at = null;
 
@@ -109,7 +119,6 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
     return NextResponse.json({ progress: [], weightedProgress: null });
   }
 
-  // Get all chapters for the course
   const { data: chapters } = await supabase
     .from("course_chapters")
     .select("id")
@@ -118,14 +127,12 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
 
   const chapterIds = (chapters ?? []).map((c) => c.id);
 
-  // Get chapter-level progress
   const { data: chapterProgress } = await supabase
     .from("subscriber_progress")
     .select("chapter_id, status, started_at, completed_at")
     .eq("subscription_id", subscription.id)
     .in("chapter_id", chapterIds.length > 0 ? chapterIds : ["00000000-0000-0000-0000-000000000000"]);
 
-  // Get all video IDs for chapters
   const { data: videos } = chapterIds.length > 0
     ? await supabase
         .from("chapter_videos")
@@ -133,27 +140,18 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
         .in("chapter_id", chapterIds)
     : { data: [] };
 
-  // Get all notebook IDs for chapters
   const { data: notebooks } = chapterIds.length > 0
-    ? await supabase
-        .from("chapter_notebooks")
-        .select("id, chapter_id")
-        .in("chapter_id", chapterIds)
+    ? await supabase.from("chapter_notebooks").select("id, chapter_id").in("chapter_id", chapterIds)
     : { data: [] };
 
-  // Get all paper IDs for chapters
   const { data: papers } = chapterIds.length > 0
-    ? await supabase
-        .from("chapter_papers")
-        .select("id, chapter_id")
-        .in("chapter_id", chapterIds)
+    ? await supabase.from("chapter_papers").select("id, chapter_id").in("chapter_id", chapterIds)
     : { data: [] };
 
   const allVideoIds = (videos ?? []).map((v) => v.id);
   const allNotebookIds = (notebooks ?? []).map((n) => n.id);
   const allPaperIds = (papers ?? []).map((p) => p.id);
 
-  // Get per-resource progress
   const [videoProg, nbProg, paperProg] = await Promise.all([
     allVideoIds.length > 0
       ? supabase.from("subscriber_video_progress").select("video_id, max_position_seconds, percent_watched").eq("subscription_id", subscription.id).in("video_id", allVideoIds)
@@ -166,7 +164,6 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
       : { data: [] },
   ]);
 
-  // Get total_video_seconds for course
   const { data: course } = await supabase
     .from("courses")
     .select("total_video_seconds")
@@ -175,7 +172,6 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
 
   const totalVideoSeconds = course?.total_video_seconds ?? 0;
 
-  // Build per-chapter resource progress
   const videoByChapter = new Map<string, { videoId: string; durationSeconds: number | null; maxPositionSeconds: number; percentWatched: number }[]>();
   const nbByChapter = new Map<string, { notebookId: string; completed: boolean }[]>();
   const paperByChapter = new Map<string, { paperId: string; completed: boolean }[]>();
@@ -211,43 +207,35 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
     });
   }
 
-  // Calculate weighted progress — equal weight per active category
+  // ── Count-based video % (Fix A) ──
+  const totalVideoCount = allVideoIds.length;
+  const completedVideos = (videoProg.data ?? []).filter((v: { percent_watched: number }) => v.percent_watched >= 90).length;
+  const completedNotebooks = (nbProg.data ?? []).filter((n: { status: string }) => n.status === "completed").length;
+  const completedPapers = (paperProg.data ?? []).filter((p: { status: string }) => p.status === "completed").length;
+
   const watchedVideoSeconds = (videoProg.data ?? []).reduce(
     (sum: number, v: { video_id: string; max_position_seconds: number }) => {
       const vData = (videos ?? []).find((vd: { id: string }) => vd.id === v.video_id);
       return sum + Math.min(v.max_position_seconds, vData?.duration_seconds ?? v.max_position_seconds);
-    },
-    0
+    }, 0
   );
-  const completedNotebooks = (nbProg.data ?? []).filter((n: { status: string }) => n.status === "completed").length;
-  const completedPapers = (paperProg.data ?? []).filter((p: { status: string }) => p.status === "completed").length;
 
-  const hasVideos = totalVideoSeconds > 0;
+  const hasVideos = totalVideoCount > 0;
   const hasNotebooks = allNotebookIds.length > 0;
   const hasPapers = allPaperIds.length > 0;
 
   const activeCount = (hasVideos ? 1 : 0) + (hasNotebooks ? 1 : 0) + (hasPapers ? 1 : 0);
   const catWeight = activeCount > 0 ? 1 / activeCount : 0;
 
-  const videoPercent = hasVideos
-    ? Math.round((Math.min(watchedVideoSeconds, totalVideoSeconds) / totalVideoSeconds) * 100)
-    : 0;
-  const colabPercent = hasNotebooks
-    ? Math.round((completedNotebooks / allNotebookIds.length) * 100)
-    : 0;
-  const paperPercent = hasPapers
-    ? Math.round((completedPapers / allPaperIds.length) * 100)
-    : 0;
+  const videoPercent = hasVideos ? Math.round((completedVideos / totalVideoCount) * 100) : 0;
+  const colabPercent = hasNotebooks ? Math.round((completedNotebooks / allNotebookIds.length) * 100) : 0;
+  const paperPercent = hasPapers ? Math.round((completedPapers / allPaperIds.length) * 100) : 0;
 
   const overallPercent = Math.round(
     videoPercent * (hasVideos ? catWeight : 0) +
     colabPercent * (hasNotebooks ? catWeight : 0) +
     paperPercent * (hasPapers ? catWeight : 0)
   );
-
-  const wVideo = hasVideos ? catWeight : 0;
-  const wColab = hasNotebooks ? catWeight : 0;
-  const wPaper = hasPapers ? catWeight : 0;
 
   const chaptersResourceProgress = (chapters ?? []).map((ch: { id: string }) => ({
     chapterId: ch.id,
@@ -262,6 +250,8 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
     weightedProgress: {
       totalVideoSeconds,
       watchedVideoSeconds,
+      totalVideoCount,
+      completedVideos,
       totalNotebooks: allNotebookIds.length,
       completedNotebooks,
       totalPapers: allPaperIds.length,
@@ -270,7 +260,7 @@ export async function GET(_req: NextRequest, { params }: { params: { courseId: s
       colabPercent,
       paperPercent,
       overallPercent,
-      weights: { video: wVideo, colab: wColab, paper: wPaper },
+      weights: { video: hasVideos ? catWeight : 0, colab: hasNotebooks ? catWeight : 0, paper: hasPapers ? catWeight : 0 },
     },
     chapters: chaptersResourceProgress,
   });

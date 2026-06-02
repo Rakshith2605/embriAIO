@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useOverallProgress } from "@/hooks/useProgress";
@@ -39,9 +39,8 @@ export function SidebarFooter() {
   const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
   const [courseProgressLoaded, setCourseProgressLoaded] = useState(false);
 
-  useEffect(() => {
-    if (!isCourseRoute || !session?.user?.email) return;
-    setCourseProgressLoaded(false);
+  const fetchCourseProgress = useCallback(() => {
+    if (!session?.user?.email) return;
     fetch("/api/courses/my-progress")
       .then((r) => (r.ok ? r.json() : null))
       .then((data: CourseProgress | null) => {
@@ -49,7 +48,21 @@ export function SidebarFooter() {
         setCourseProgressLoaded(true);
       })
       .catch(() => setCourseProgressLoaded(true));
-  }, [showCurriculum, session?.user?.email]);
+  }, [session?.user?.email]);
+
+  useEffect(() => {
+    if (!isCourseRoute) return;
+    setCourseProgressLoaded(false);
+    fetchCourseProgress();
+  }, [pathname, isCourseRoute, fetchCourseProgress]);
+
+  // Listen for progress events to refresh live (Fix D)
+  useEffect(() => {
+    if (!isCourseRoute) return;
+    const handler = () => fetchCourseProgress();
+    window.addEventListener("embra:progress-updated", handler);
+    return () => window.removeEventListener("embra:progress-updated", handler);
+  }, [isCourseRoute, fetchCourseProgress]);
 
   const loaded = showCurriculum ? isHydrated : (isCourseRoute ? courseProgressLoaded : true);
   const percent = showCurriculum ? curriculumPercent : (isCourseRoute ? (courseProgress?.percentComplete ?? 0) : 0);
