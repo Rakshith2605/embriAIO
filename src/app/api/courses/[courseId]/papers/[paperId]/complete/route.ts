@@ -175,6 +175,7 @@ async function deriveChapterStatus(
   };
   if (newStatus === "in_progress") updates.started_at = now;
   if (newStatus === "completed") { updates.completed_at = now; }
+  if (newStatus !== "completed") { updates.completed_at = null; }
 
   await supabase
     .from("subscriber_progress")

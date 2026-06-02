@@ -64,6 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { courseId: s
 
   if (status === "in_progress") updates.started_at = now;
   if (status === "completed") updates.completed_at = now;
+  if (status !== "completed") updates.completed_at = null;
 
   const { data, error } = await supabase
     .from("subscriber_progress")
